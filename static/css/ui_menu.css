@@ -1,0 +1,17 @@
+.ui_menu {
+  display:inline-block;
+  position:absolute;
+  width:158px;
+  height:108px;
+  opacity:0;
+}
+.ui_icons {
+  opacity:0.8;
+}
+.ui_icons:hover {
+  opacity:1;
+}
+.ui_menu img {
+  cursor:pointer;
+  position:relative;
+}
