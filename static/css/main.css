@@ -37,13 +37,13 @@ div.area img {
 }
 
 div.pc {
-  width:112px;
+  width:94px;
   height:300px;
   position:absolute;
   left:400px;
   top:400px;
   background-image:url('../img/people/bum_default.png');
-  background-size:112px 300px;
+  background-size:100% 100%;
   background-repeat:no-repeat;
 }
 
@@ -55,7 +55,7 @@ section.controls {
   align-items:center;
   justify-content:flex-end;
   padding:20px;
-  background-color:#2b417d;
+  background-color:#1bbb45;
   border:5px solid #000;
   border-top:none;
   border-bottom-left-radius:15px;
