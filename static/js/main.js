@@ -19,6 +19,16 @@ $(document).ready(function() {
   });
 });
 
+
+function drawSpeechBubble(text, x, y) {
+  var div = $('<div class="speechContainer"></div>');
+  $(div).append('<div class="speechBubble">' + text + '</div>');
+  $(document.body).append(div);
+  $(div).css('left', x).css('top', y - $(div).height());
+  //$(div).fadeTo('fast', 1);
+  
+}
+
 function Point(x, y, id) {
   this.x = x;
   this.y = y;
@@ -41,7 +51,6 @@ function animateWalk(array, start) {
     scale -= (0.20 * multiplier);
     
   }
-  console.log(scale);
   
   $('.pc').css('background-image', animationImg);
   //$('.pc').css('width', PC_WALK_WIDTH);
@@ -90,9 +99,7 @@ function walkTo(map, xPos, yPos) {
   g.addVertex('C', {'B' : getPointDistance(points[1], points[2]), 'D' : getPointDistance(points[2], points[3])});
   g.addVertex('D', {'C' : getPointDistance(points[2], points[3]), 'E' : getPointDistance(points[3], points[4]), 'B' : getPointDistance(points[3], points[1])});
   g.addVertex('E', {'D' : getPointDistance(points[3], points[4])});
- console.log ('go from ' + startPoint.id + ' to ' + endPoint.id);
   var route = g.shortestPath(startPoint.id, endPoint.id).reverse();
-  console.log(route);
   var path = [];
   for (var i=0; i < route.length; i++) {
     path.push($.grep(points, function(e){ return e.id == route[i]; }));
@@ -126,7 +133,7 @@ function removeAllUIMenus() {
 
 function lookAtObject(objectID) {
   $.getJSON(SERVICE_URL + 'object/' + objectID + '/look', function(data) {
-    console.log(data);
+    drawSpeechBubble(data.description, $('.pc').offset().left-20, $('.pc').offset().top);
   });
 }
 
