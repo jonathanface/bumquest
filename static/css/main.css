@@ -83,7 +83,7 @@ section.controls .icon:hover {
 
 .speechContainer {
   position:absolute;
-
+  opacity:0;
 }
 .speechBubble {
   font-family:dialog;

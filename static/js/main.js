@@ -5,6 +5,9 @@ const PC_BASE_HEIGHT = 300;
 const PC_BASE_WIDTH = 94;
 const PC_WALK_WIDTH = 90;
 
+const SPEECH_TIMER = 8000;
+const MENU_TIMER = 3000;
+
 $(document).ready(function() {
   $('#area01 area').each(function(index, item) {
     $(item).click(function(event) {
@@ -25,8 +28,8 @@ function drawSpeechBubble(text, x, y) {
   $(div).append('<div class="speechBubble">' + text + '</div>');
   $(document.body).append(div);
   $(div).css('left', x).css('top', y - $(div).height());
-  //$(div).fadeTo('fast', 1);
-  
+  $(div).fadeTo('fast', 1);
+  assignSpeechTimer(div);
 }
 
 function Point(x, y, id) {
@@ -109,6 +112,12 @@ function walkTo(map, xPos, yPos) {
   }
 }
 
+function assignSpeechTimer(bubble) {
+  setTimeout(function() {
+    removeSpeechBubble(bubble);
+  }, SPEECH_TIMER);
+}
+
 function assignMenuTimer(menu) {
   setTimeout(function() {
     if ($(menu).find('.ui_icons:hover').length) {
@@ -116,7 +125,19 @@ function assignMenuTimer(menu) {
     } else {
       removeUIMenu(menu);
     }
-  }, 3000);
+  }, MENU_TIMER);
+}
+
+function removeSpeechBubble(bubble) {
+  $(bubble).fadeOut('fast', function() {
+    $(this).remove();
+  });
+}
+
+function removeAllSpeech() {
+  $('.speechContainer').fadeOut('fast', function() {
+    $(this).remove();
+  });
 }
 
 function removeUIMenu(menu) {
@@ -133,6 +154,7 @@ function removeAllUIMenus() {
 
 function lookAtObject(objectID) {
   $.getJSON(SERVICE_URL + 'object/' + objectID + '/look', function(data) {
+    removeAllSpeech();
     drawSpeechBubble(data.description, $('.pc').offset().left-20, $('.pc').offset().top);
   });
 }
@@ -146,6 +168,7 @@ function interact(action, object) {
       lookAtObject(object);
       break;
   }
+  removeAllUIMenus();
 }
 
 function showMenu(object, xPos, yPos) {
