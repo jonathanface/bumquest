@@ -8,16 +8,30 @@ const PC_WALK_WIDTH = 90;
 const SPEECH_TIMER = 8000;
 const MENU_TIMER = 3000;
 
+
+function loadArea(areaID) {
+  console.log('??');
+  $.getJSON(SERVICE_URL + 'area/' + areaID, function(data) {
+    var pc = new Player();
+    var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, pc);
+    pc.loadPlayer();
+  });
+}
+
 $(document).ready(function() {
+  loadArea(1);
   $('#area01 area').each(function(index, item) {
     $(item).click(function(event) {
       event.preventDefault();
       event.stopPropagation();
+      
+      
+      /*
       if ($(item).hasClass('clickwalk')) {
         walkTo($('#area01 area.walkpath'), event.pageX, event.pageY);
       } else {
         showMenu(this, event.pageX - $('main').offset().left, event.pageY - $('main').offset().top);
-      }
+      }*/
     });
   });
 });
@@ -88,6 +102,7 @@ function getNearestCoordinates(array, point) {
 }
 
 function walkTo(map, xPos, yPos) {
+  console.log('walking');
   removeAllUIMenus();
   var points = [new Point(65,728, 'A'), new Point(483,714, 'B'), new Point(478,477, 'C'), new Point(623,721, 'D'), new Point(938,718, 'E')];
   var currentPoint = new Point($('.pc').offset().left - $('main').offset().left, $('.pc').offset().top + $('.pc').height() - $('main').offset().top);
