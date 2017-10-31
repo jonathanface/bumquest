@@ -8,32 +8,19 @@ const PC_WALK_WIDTH = 90;
 const SPEECH_TIMER = 8000;
 const MENU_TIMER = 3000;
 
+var currentArea;
+var speechTimer, menuTimer;
+
 
 function loadArea(areaID) {
-  console.log('??');
   $.getJSON(SERVICE_URL + 'area/' + areaID, function(data) {
     var pc = new Player();
-    var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, pc);
-    pc.loadPlayer();
+    currentArea = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, pc, data.objects);
   });
 }
 
 $(document).ready(function() {
   loadArea(1);
-  $('#area01 area').each(function(index, item) {
-    $(item).click(function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      
-      /*
-      if ($(item).hasClass('clickwalk')) {
-        walkTo($('#area01 area.walkpath'), event.pageX, event.pageY);
-      } else {
-        showMenu(this, event.pageX - $('main').offset().left, event.pageY - $('main').offset().top);
-      }*/
-    });
-  });
 });
 
 
@@ -102,7 +89,7 @@ function getNearestCoordinates(array, point) {
 }
 
 function walkTo(map, xPos, yPos) {
-  console.log('walking');
+  removeAllSpeech();
   removeAllUIMenus();
   var points = [new Point(65,728, 'A'), new Point(483,714, 'B'), new Point(478,477, 'C'), new Point(623,721, 'D'), new Point(938,718, 'E')];
   var currentPoint = new Point($('.pc').offset().left - $('main').offset().left, $('.pc').offset().top + $('.pc').height() - $('main').offset().top);
@@ -128,13 +115,13 @@ function walkTo(map, xPos, yPos) {
 }
 
 function assignSpeechTimer(bubble) {
-  setTimeout(function() {
+  speechTimer = setTimeout(function() {
     removeSpeechBubble(bubble);
   }, SPEECH_TIMER);
 }
 
 function assignMenuTimer(menu) {
-  setTimeout(function() {
+  menuTimer = setTimeout(function() {
     if ($(menu).find('.ui_icons:hover').length) {
       assignMenuTimer(menu);
     } else {
@@ -144,34 +131,65 @@ function assignMenuTimer(menu) {
 }
 
 function removeSpeechBubble(bubble) {
+  clearTimeout(speechTimer);
+  $('.pc').css('background-image', 'url(img/people/bum_default.png)');
   $(bubble).fadeOut('fast', function() {
     $(this).remove();
   });
 }
 
 function removeAllSpeech() {
+  clearTimeout(speechTimer);
+  $('.pc').css('background-image', 'url(img/people/bum_default.png)');
   $('.speechContainer').fadeOut('fast', function() {
     $(this).remove();
   });
 }
 
 function removeUIMenu(menu) {
+  clearTimeout(menuTimer);
   $(menu).fadeOut('fast', function() {
     $(this).remove();
   });
 }
 
 function removeAllUIMenus() {
+  clearTimeout(menuTimer);
   $('.ui_menu').fadeOut('fast', function() {
     $(this).remove();
   });
 }
 
 function lookAtObject(objectID) {
-  $.getJSON(SERVICE_URL + 'object/' + objectID + '/look', function(data) {
-    removeAllSpeech();
-    drawSpeechBubble(data.description, $('.pc').offset().left-20, $('.pc').offset().top);
-  });
+  var object = $.grep(currentArea.items, function(e){ return e.id == objectID; });
+  removeAllSpeech();
+  if (object[0].description) {
+    $('.pc').css('background-image', 'url(img/animations/bum_talk.gif)');
+    drawSpeechBubble(object[0].description, $('.pc').offset().left-20, $('.pc').offset().top);
+  } else {
+    $.getJSON(SERVICE_URL + 'object/' + objectID + '/look', function(data) {
+      object[0].description = data.description;
+      console.log($('.pc').length)
+      $('.pc').css('background-image', 'url(img/animations/bum_talk.gif)');
+      drawSpeechBubble(data.description, $('.pc').offset().left-20, $('.pc').offset().top);
+    });
+  }
+}
+
+function speakToObject(objectID) {
+  var object = $.grep(currentArea.items, function(e){ return e.id == objectID; });
+  removeAllSpeech();
+  if (object[0].speech) {
+    $('.pc').css('background-image', 'url(img/animations/bum_talk.gif)');
+    drawSpeechBubble(object[0].speech, $('.pc').offset().left-20, $('.pc').offset().top);
+  } else {
+    $.getJSON(SERVICE_URL + 'object/' + objectID + '/speak', function(data) {
+      object[0].speech = data.description;
+      $('.pc').css('background-image', 'url(img/animations/bum_talk.gif)');
+      console.log('speak');
+      drawSpeechBubble(data.description, $('.pc').offset().left-20, $('.pc').offset().top);
+    });
+  }
 }
 
 function interact(action, object) {
@@ -182,12 +200,16 @@ function interact(action, object) {
     case 'look':
       lookAtObject(object);
       break;
+    case 'speak':
+      speakToObject(object);
+      break;
   }
   removeAllUIMenus();
 }
 
 function showMenu(object, xPos, yPos) {
   removeAllUIMenus();
+  removeAllSpeech();
   $.get(TEMPLATE_URL + 'interact_menu.html', function(template) {
     template = $(template);
     var left = xPos + 10;

@@ -15,7 +15,6 @@ class Player {
     var destination = new Point(xPos - $('main').offset().left, yPos - $('main').offset().top);
     var endPoint = getNearestCoordinates(points, destination);
     var startPoint = getNearestCoordinates(points, currentPoint);
-   // console.log(startPoint);
     var g = new Graph();
    
     g.addVertex('A', {'B': getPointDistance(points[0], points[1])});
@@ -30,6 +29,6 @@ class Player {
     }
     if (path.length) {
       animateWalk(path, 0);
-    }*/
+    }
   }
 }
