@@ -28,6 +28,8 @@ type Area struct {
 type LookInfo struct {
   Lid int `json:"lid"`
   Description string `json:"description"`
+  Has_inventory int `json:"has_inventory"`
+  Is_closed int `json:"is_closed"`
 }
 type SpeakInfo struct {
   Sid int `json:"sid"`
@@ -36,8 +38,12 @@ type SpeakInfo struct {
 type Object struct {
   Oid int `json:"oid"`
   Title string `json:"title"`
-  Coords string `json:"coords"`
-  CoordsType string `json:"shape"`
+  Image_opened string `json:"image_opened"`
+  Image_closed string `json:"image_closed"`
+  X int `json:"x"`
+  Y int `json:"y"`
+  Has_inventory int `json:"has_inventory"`
+  Is_closed int `json:"is_closed"`
 }
 
 func forbidden (w http.ResponseWriter, err string) {
@@ -73,14 +79,14 @@ func handleArea(w http.ResponseWriter, r *http.Request) {
   db := DBUtils.OpenDB();
   db.QueryRow("select areaID,name,description,walkCoords,walkType,image from areas WHERE areaID = ?", aid).Scan(&area.Aid, &area.Title, &area.Description, &area.Walkpath, &area.Walktype, &area.Image)
 
-  rows, err := db.Query("select objectID,name,coords,coordsType from objects WHERE location = ?", aid)
+  rows, err := db.Query("select objectID,name,image_opened, image_closed ,x,y,is_closed,has_inventory from objects WHERE location = ?", aid)
   if (err != nil) {
     log.Fatal(err)
   }
   var objects []Object
   for rows.Next() {
     object := Object{}
-    err = rows.Scan(&object.Oid, &object.Title, &object.Coords, &object.CoordsType)
+    err = rows.Scan(&object.Oid, &object.Title, &object.Image_opened, &object.Image_closed, &object.X, &object.Y, &object.Is_closed, &object.Has_inventory)
     if err != nil {
       log.Fatal(err)
     }
@@ -132,7 +138,8 @@ func handleLookAction(w http.ResponseWriter, r *http.Request) {
   }
   var info = LookInfo{}
   db := DBUtils.OpenDB();
-  db.QueryRow("select objectID,description from objects WHERE objectID = ?", oid).Scan(&info.Lid, &info.Description)
+  db.QueryRow("select lookID, text from look_results WHERE objectID = ?", oid).Scan(&info.Lid, &info.Description)
+  db.QueryRow("select has_inventory,is_closed from objects WHERE objectID = ?", oid).Scan(&info.Has_inventory, &info.Is_closed)
   DBUtils.CloseDB(db)
   if len(info.Description) == 0 {
     fileNotFound(w, "No description")

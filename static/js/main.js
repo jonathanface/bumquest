@@ -168,10 +168,14 @@ function lookAtObject(objectID) {
     drawSpeechBubble(object[0].description, $('.pc').offset().left-20, $('.pc').offset().top);
   } else {
     $.getJSON(SERVICE_URL + 'object/' + objectID + '/look', function(data) {
-      object[0].description = data.description;
-      console.log($('.pc').length)
+      var description = data.description;
+      console.log(data);
+      if (data.is_closed == 1) {
+        description += '<br><br>It\'s closed.';
+      }
+      object[0].description = description;
       $('.pc').css('background-image', 'url(img/animations/bum_talk.gif)');
-      drawSpeechBubble(data.description, $('.pc').offset().left-20, $('.pc').offset().top);
+      drawSpeechBubble(description, $('.pc').offset().left-20, $('.pc').offset().top);
     });
   }
 }

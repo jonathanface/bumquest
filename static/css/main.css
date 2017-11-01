@@ -120,3 +120,8 @@ section.controls .icon:hover {
     display: block;
     width: 0;
 }
+
+.object {
+  position:absolute;
+  cursor:pointer;
+}

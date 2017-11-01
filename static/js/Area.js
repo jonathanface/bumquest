@@ -13,8 +13,9 @@ class Area {
     this.loadBackground();
     this.items = [];
     for (var i=0; i < objects.length; i++) {
-      var obj = new Item(objects[i].oid, objects[i].title, objects[i].coords, objects[i].shape, this.id);
-      obj.drawShape();
+      var obj = new Item(objects[i].oid, objects[i].title,
+                         this.id, objects[i].image_opened, objects[i].image_closed, objects[i].x,
+                         objects[i].y, objects[i].is_closed, objects[i].has_inventory);
       this.items.push(obj);
     }
     this.player.loadPlayer();
