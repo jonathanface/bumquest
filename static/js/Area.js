@@ -1,6 +1,6 @@
 class Area {
   
-  constructor (id, title, description, image, walkPath, walkType, player, objects) {
+  constructor (id, title, description, image, walkPath, walkType, player, objects, nodes) {
     this.id = id;
     this.title = title;
     this.description = description;
@@ -9,16 +9,16 @@ class Area {
     this.AREA_URL = AREA_URL;
     this.walkPath = walkPath;
     this.walkType = walkType;
-    this.player = player;
     this.loadBackground();
     this.items = [];
     for (var i=0; i < objects.length; i++) {
       var obj = new Item(objects[i].oid, objects[i].title,
                          this.id, objects[i].image_opened, objects[i].image_closed, objects[i].x,
-                         objects[i].y, objects[i].is_closed, objects[i].has_inventory);
+                         objects[i].y, objects[i].is_closed, objects[i].has_inventory, objects[i].is_locked,
+                         objects[i].contained_in);
       this.items.push(obj);
     }
-    this.player.loadPlayer();
+    this.walkpathNodes = nodes;
     this.loadWalkpath();
   }
   
@@ -36,12 +36,13 @@ class Area {
   }
 
   loadWalkpath() {
+    var self = this;
     var area = $('<area class="clickwalk" coords="' + this.walkPath + '" shape="' + this.walkType + '">');
     $('body').find('map#area_' + this.id).append(area);
     $(area).click(function(event) {
       event.preventDefault();
       event.stopPropagation();
-      walkTo(area, event.pageX, event.pageY);
+      pc.walkTo(self.walkpathNodes, event.pageX, event.pageY);
     });
   }
   
