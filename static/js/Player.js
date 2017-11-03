@@ -2,6 +2,14 @@ class Player {
   
   constructor (area) {
     this.location = area;
+    this.img_default = document.createElement('img');
+    this.img_default.src = 'img/people/bum_default.png';
+    this.img_walkleft = document.createElement('img');
+    this.img_walkleft.src = 'img/animations/bum_walk_left.gif';
+    this.img_walkright = document.createElement('img');
+    this.img_walkright.src = 'img/animations/bum_walk_right.gif';
+    this.img_talk = document.createElement('img');
+    this.img_talk.src = 'img/animations/bum_talk.gif';
     const MIN_INTERACT_DISTANCE = 100;
     this.MIN_INTERACT_DISTANCE = MIN_INTERACT_DISTANCE;
     $('main').append('<div class="pc"></div>');
@@ -9,7 +17,7 @@ class Player {
 
   examine(object) {
     if (object.description) {
-      $('.pc').css('background-image', 'url(img/animations/bum_talk.gif)');
+      $('.pc').css('background-image', 'url(' + this.img_talk.src + ')');
       drawSpeechBubble(object.description, $('.pc').offset().left-20, $('.pc').offset().top);
     } else {
       $.getJSON(SERVICE_URL + 'object/' + object.id + '/look', function(data) {
@@ -18,7 +26,7 @@ class Player {
           description += '<br><br>It\'s closed.';
         }
         object.description = description;
-        $('.pc').css('background-image', 'url(img/animations/bum_talk.gif)');
+        $('.pc').css('background-image', 'url(' + this.img_talk.src + ')');
         drawSpeechBubble(description, $('.pc').offset().left-20, $('.pc').offset().top);
       });
     }
@@ -53,12 +61,12 @@ class Player {
   
   speakTo(object) {
     if (object.description) {
-      $('.pc').css('background-image', 'url(img/animations/bum_talk.gif)');
+      $('.pc').css('background-image', 'url(' + this.img_talk.src + ')');
       drawSpeechBubble(object.description, $('.pc').offset().left-20, $('.pc').offset().top);
     } else {
       $.getJSON(SERVICE_URL + 'object/' + object.id + '/speak', function(data) {
         object.description = data.description;
-        $('.pc').css('background-image', 'url(img/animations/bum_talk.gif)');
+        $('.pc').css('background-image', 'url(' + this.img_talk.src + ')');
         drawSpeechBubble(data.description, $('.pc').offset().left-20, $('.pc').offset().top);
       });
     }
@@ -91,8 +99,43 @@ class Player {
       path.push($.grep(points, function(e){ return e.id == route[i]; }));
     }
     if (path.length) {
-      animateWalk(path, 0, callback);
+      this.animateWalk(path, 0, callback);
     }
+  }
+
+  animateWalk(array, start, callback) {
+    var self = this;
+    var baseY = 720;
+    var animationImg = 'url(' + this.img_walkright.src + ')';
+    if (array[array.length-1][0].x < ($('.pc').offset().left - $('main').offset().left)) {
+      animationImg = 'url(' + this.img_walkleft.src + ')';
+    }
+    var scale = 1;
+    if (Math.abs(array[start][0].y - baseY) > 100) {
+      var multiplier = Math.round(Math.abs(array[start][0].y - baseY) / 100);
+      scale -= (0.20 * multiplier);
+      
+    }
+    
+    $('.pc').css('background-image', animationImg);
+    var self = this;
+    $('.pc').stop().animate({
+      left: array[start][0].x - PC_BASE_WIDTH/2,
+      top: array[start][0].y - PC_BASE_HEIGHT*scale,
+      height: PC_BASE_HEIGHT * scale,
+      width: PC_BASE_WIDTH * scale
+    }, 1000, function() {
+      if (array[start] == array[array.length-1]) {
+        $('.pc').css('background-image', 'url(' + self.img_default.src + ')');
+        $('.pc').css('width', PC_BASE_WIDTH * scale);
+        if (callback) {
+          callback();
+        }
+      } else {
+        start++;
+        self.animateWalk(array, start);
+      }
+    });
   }
 }
 
@@ -106,39 +149,7 @@ function getPointDistance(point1, point2) {
   return Math.hypot(point2.x-point1.x, point2.y-point1.y);
 }
 
-function animateWalk(array, start, callback) {
-  var baseY = 720;
-  var animationImg = 'url(img/animations/bum_walk_right.gif)';
-  if (array[array.length-1][0].x < ($('.pc').offset().left - $('main').offset().left)) {
-    animationImg = 'url(img/animations/bum_walk_left.gif)';
-  }
-  var scale = 1;
-  if (Math.abs(array[start][0].y - baseY) > 100) {
-    var multiplier = Math.round(Math.abs(array[start][0].y - baseY) / 100);
-    scale -= (0.20 * multiplier);
-    
-  }
-  
-  $('.pc').css('background-image', animationImg);
-  //$('.pc').css('width', PC_WALK_WIDTH);
-  $('.pc').stop().animate({
-    left: array[start][0].x - PC_BASE_WIDTH/2,
-    top: array[start][0].y - PC_BASE_HEIGHT*scale,
-    height: PC_BASE_HEIGHT * scale,
-    width: PC_BASE_WIDTH * scale
-  }, 1000, function() {
-    if (array[start] == array[array.length-1]) {
-      $('.pc').css('background-image', 'url(img/people/bum_default.png)');
-      $('.pc').css('width', PC_BASE_WIDTH * scale);
-      if (callback) {
-        callback();
-      }
-    } else {
-      start++;
-      animateWalk(array, start);
-    }
-  });
-}
+
 
 function getNearestCoordinates(array, point) {
   var firstDistance = getPointDistance(point, array[0]);
