@@ -1,9 +1,21 @@
 class Player {
   
   constructor (area) {
+    var self = this;
     this.location = area;
+    this.width;
+    this.height;
+    this.x = 400;
+    this.y = 400;
+
     this.img_default = document.createElement('img');
+    this.img_default.load = function() {
+      self.width = self.img_default.width;
+      self.height = self.img_default.height;
+    }
     this.img_default.src = 'img/people/bum_default.png';
+    
+    this.initial_default_img = this.img_default;
     this.img_walkleft = document.createElement('img');
     this.img_walkleft.src = 'img/animations/bum_walk_left.gif';
     this.img_walkright = document.createElement('img');
@@ -12,22 +24,23 @@ class Player {
     this.img_talk.src = 'img/animations/bum_talk.gif';
     const MIN_INTERACT_DISTANCE = 100;
     this.MIN_INTERACT_DISTANCE = MIN_INTERACT_DISTANCE;
-    $('main').append('<div class="pc"></div>');
+    $('main').append('<div class="pc" style="top:' + this.y + ';left:'+this.x+';"></div>');
   }
 
   examine(object) {
+    var self = this;
     if (object.description) {
-      $('.pc').css('background-image', 'url(' + this.img_talk.src + ')');
-      drawSpeechBubble(object.description, $('.pc').offset().left-20, $('.pc').offset().top);
+      this.updateImage(this.img_talk);
+      this.speak(object.description);
     } else {
       $.getJSON(SERVICE_URL + 'object/' + object.id + '/look', function(data) {
         var description = data.description;
         if (data.is_closed == 1) {
-          description += '<br><br>It\'s closed.';
+          description += '<br>It\'s closed.';
         }
         object.description = description;
-        $('.pc').css('background-image', 'url(' + this.img_talk.src + ')');
-        drawSpeechBubble(description, $('.pc').offset().left-20, $('.pc').offset().top);
+        self.updateImage(self.img_talk);
+        self.speak(description);
       });
     }
   }
@@ -44,36 +57,77 @@ class Player {
 
     var endPoint = getNearestCoordinates(path, destination);
     var startPoint = getNearestCoordinates(path, currentPoint);
-
+console.log(startPoint);
+console.log(endPoint);
     if (startPoint != endPoint) {
-      drawSpeechBubble('Alright, hold on', $('.pc').offset().left, $('.pc').offset().top, 1000, function() {
-        self.walkTo(self.location.walkpathNodes, xPos, yPos, function() {
-          self.touch(object)
-        });
+      self.speak('Alright, hold on', 2000);
+      self.walkTo(self.location.walkpathNodes, xPos, yPos, function() {
+        console.log('done');
+        self.touch(object)
       });
-      return;
     }
     console.log(object);
     if (object.is_locked) {
-      drawSpeechBubble('It\'s locked', $('.pc').offset().left, $('.pc').offset().top, 2000);
+      this.speak('It won\'t open.', 2000);
     }
   }
+
+  assignSpeechTimer(timer, callback) {
+    if (!timer) {
+      timer = SPEECH_TIMER;
+    }
+    var self = this;
+    speechTimer = setTimeout(function() {
+      self.shutup(callback);
+    }, timer);
+  }
   
+  shutup(callback) {
+    clearTimeout(speechTimer);
+    this.img_default = this.initial_default_img;
+    this.updateImage(this.img_default);
+    $('.speechContainer').fadeOut('fast', function() {
+      $(this).remove();
+      if (callback) {
+        callback();
+      }
+    });
+  }
+  
+  positionSpeechBubble(div) {
+    $(div).css('left', this.x + $('main').offset().left).css('top', this.y - $(div).height() + $('main').offset().top);
+  }
+  
+  speak(text, timer, callback) {
+    var self = this;
+    if ($('.speechContainer').length) {
+      this.shutup(function() {self.speak(text, timer, callback)});
+      return;
+    }
+    var div = $('<div class="speechContainer"></div>');
+    $(div).append('<div class="speechBubble">' + text + '</div>');
+    $(document.body).append(div);
+    self.positionSpeechBubble(div);
+    $(div).fadeTo('fast', 1);
+    this.updateImage(this.img_talk);
+    this.img_default = this.img_talk;
+    this.assignSpeechTimer(timer, callback);
+  }
+
   speakTo(object) {
+    var self = this;
     if (object.description) {
-      $('.pc').css('background-image', 'url(' + this.img_talk.src + ')');
-      drawSpeechBubble(object.description, $('.pc').offset().left-20, $('.pc').offset().top);
+      this.speak(object.description);
     } else {
       $.getJSON(SERVICE_URL + 'object/' + object.id + '/speak', function(data) {
         object.description = data.description;
-        $('.pc').css('background-image', 'url(' + this.img_talk.src + ')');
-        drawSpeechBubble(data.description, $('.pc').offset().left-20, $('.pc').offset().top);
+        self.speak(data.description);
       });
     }
   }
   
   walkTo(path, xPos, yPos, callback) {
-    removeAllSpeech();
+    console.log('move');
     removeAllUIMenus();
     var points = [];
     var g = new Graph();
@@ -90,6 +144,7 @@ class Player {
     
     var currentPoint = new Point($('.pc').offset().left - $('main').offset().left, $('.pc').offset().top + $('.pc').height() - $('main').offset().top);
     var destination = new Point(xPos - $('main').offset().left, yPos - $('main').offset().top);
+
     var endPoint = getNearestCoordinates(points, destination);
     var startPoint = getNearestCoordinates(points, currentPoint);
 
@@ -102,38 +157,61 @@ class Player {
       this.animateWalk(path, 0, callback);
     }
   }
+  
+  updateImage(imgObj, scale) {
+    if (!scale) {
+      scale = 1;
+    }
+    this.width = imgObj.width * scale;
+    this.height = imgObj.height * scale;
+    $('.pc').css('background-image', 'url(' + imgObj.src + ')');
+  }
 
   animateWalk(array, start, callback) {
+    console.log('anim');
     var self = this;
     var baseY = 720;
-    var animationImg = 'url(' + this.img_walkright.src + ')';
+    var imgObj = this.img_walkright;
     if (array[array.length-1][0].x < ($('.pc').offset().left - $('main').offset().left)) {
-      animationImg = 'url(' + this.img_walkleft.src + ')';
+      imgObj = this.img_walkleft;
     }
     var scale = 1;
     if (Math.abs(array[start][0].y - baseY) > 100) {
       var multiplier = Math.round(Math.abs(array[start][0].y - baseY) / 100);
-      scale -= (0.20 * multiplier);
-      
+      scale -= (0.10 * multiplier);
     }
-    
-    $('.pc').css('background-image', animationImg);
+
+    this.updateImage(imgObj, scale);
     var self = this;
     $('.pc').stop().animate({
-      left: array[start][0].x - PC_BASE_WIDTH/2,
-      top: array[start][0].y - PC_BASE_HEIGHT*scale,
-      height: PC_BASE_HEIGHT * scale,
-      width: PC_BASE_WIDTH * scale
-    }, 1000, function() {
-      if (array[start] == array[array.length-1]) {
-        $('.pc').css('background-image', 'url(' + self.img_default.src + ')');
-        $('.pc').css('width', PC_BASE_WIDTH * scale);
-        if (callback) {
-          callback();
+      left: array[start][0].x - self.width/2,
+      top: array[start][0].y - self.height*scale,
+      height: self.height * scale,
+      width: self.width * scale
+    }, {
+      step: function() {
+        self.x = $('.pc').position().left;
+        self.y = $('.pc').position().top;
+        $('.speechContainer').each(function(index, item) {
+          self.positionSpeechBubble(item);
+        });
+      },
+      duration: 1000,
+      complete: function() {
+        if (array[start] == array[array.length-1]) {
+          self.updateImage(self.img_default, scale);
+          self.x = $('.pc').position().left;
+          self.y = $('.pc').position().top;
+          $('.speechContainer').each(function(index, item) {
+            self.positionSpeechBubble(item);
+          });
+          if (callback) {
+            callback();
+          }
+        } else {
+          start++;
+          self.animateWalk(array, start);
         }
-      } else {
-        start++;
-        self.animateWalk(array, start);
       }
     });
   }

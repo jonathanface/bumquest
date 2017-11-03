@@ -1,10 +1,8 @@
 
 const TEMPLATE_URL = 'templates/';
 const SERVICE_URL = 'service/';
-const PC_BASE_HEIGHT = 300;
-const PC_BASE_WIDTH = 94;
-const PC_WALK_WIDTH = 90;
 
+const PC_BASE_HEIGHT = 300;
 const SPEECH_TIMER = 8000;
 const MENU_TIMER = 3000;
 
@@ -23,23 +21,9 @@ $(document).ready(function() {
 });
 
 
-function drawSpeechBubble(text, x, y, timer, callback) {
-  var div = $('<div class="speechContainer"></div>');
-  $(div).append('<div class="speechBubble">' + text + '</div>');
-  $(document.body).append(div);
-  $(div).css('left', x).css('top', y - $(div).height());
-  $(div).fadeTo('fast', 1);
-  assignSpeechTimer(div, timer, callback);
-}
 
-function assignSpeechTimer(bubble, timer, callback) {
-  if (!timer) {
-    timer = SPEECH_TIMER;
-  }
-  speechTimer = setTimeout(function() {
-    removeSpeechBubble(bubble, callback);
-  }, timer);
-}
+
+
 
 function assignMenuTimer(menu) {
   menuTimer = setTimeout(function() {
@@ -63,11 +47,7 @@ function removeSpeechBubble(bubble, callback) {
 }
 
 function removeAllSpeech() {
-  clearTimeout(speechTimer);
-  $('.pc').css('background-image', 'url(img/people/bum_default.png)');
-  $('.speechContainer').fadeOut('fast', function() {
-    $(this).remove();
-  });
+  
 }
 
 function removeUIMenu(menu) {
