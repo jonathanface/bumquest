@@ -50,6 +50,8 @@ type Object struct {
   Image_closed string `json:"image_closed"`
   X int `json:"x"`
   Y int `json:"y"`
+  Interact_x int `json:"interaction_x"`
+  Interact_y int `json:"interaction_y"`
   Has_inventory int `json:"has_inventory"`
   Is_closed int `json:"is_closed"`
   Is_locked int `json:"is_locked"`
@@ -94,14 +96,14 @@ func handleArea(w http.ResponseWriter, r *http.Request) {
   db := DBUtils.OpenDB();
   db.QueryRow("select areaID,name,description,walkCoords,walkType,image from areas WHERE areaID = ?", aid).Scan(&area.Aid, &area.Title, &area.Description, &area.Walkpath, &area.Walktype, &area.Image)
 
-  rows, err := db.Query("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in,has_inventory from objects WHERE locationID = ?", aid)
+  rows, err := db.Query("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in,has_inventory,interact_x, interact_y from objects WHERE locationID = ?", aid)
   if (err != nil) {
     log.Fatal(err)
   }
   var objects []Object
   for rows.Next() {
     object := Object{}
-    err = rows.Scan(&object.Oid, &object.Title, &object.Image_opened, &object.Image_closed, &object.X, &object.Y, &object.Is_closed, &object.Is_locked, &object.Contained_in, &object.Has_inventory)
+    err = rows.Scan(&object.Oid, &object.Title, &object.Image_opened, &object.Image_closed, &object.X, &object.Y, &object.Is_closed, &object.Is_locked, &object.Contained_in, &object.Has_inventory, &object.Interact_x, &object.Interact_y)
     if err != nil {
       log.Fatal(err)
     }

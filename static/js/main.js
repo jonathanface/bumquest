@@ -78,6 +78,7 @@ function interact(action, objectID) {
       pc.speakTo(item);
       break;
     case 'touch':
+      pc.speak('Alright, hold on', 2000);
       pc.touch(item);
       break;
   }
@@ -105,3 +106,6 @@ function showMenu(object, xPos, yPos) {
   });
 }
 
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}

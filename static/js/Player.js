@@ -5,16 +5,17 @@ class Player {
     this.location = area;
     this.width;
     this.height;
-    this.x = 400;
-    this.y = 400;
 
     this.img_default = document.createElement('img');
-    this.img_default.load = function() {
+    this.img_default.onload = function() {
       self.width = self.img_default.width;
       self.height = self.img_default.height;
+      self.pathLocation = self.location.walkpathNodes[0];
+      self.x = self.pathLocation.x - (self.width/2);
+      self.y = self.pathLocation.y - self.height;
+      $('main').append('<div class="pc" style="top:' + (self.pathLocation.y - self.height) + ';left:' + (self.pathLocation.x - (self.width/2)) + ';"></div>');
     }
     this.img_default.src = 'img/people/bum_default.png';
-    
     this.initial_default_img = this.img_default;
     this.img_walkleft = document.createElement('img');
     this.img_walkleft.src = 'img/animations/bum_walk_left.gif';
@@ -24,8 +25,8 @@ class Player {
     this.img_talk.src = 'img/animations/bum_talk.gif';
     const MIN_INTERACT_DISTANCE = 100;
     this.MIN_INTERACT_DISTANCE = MIN_INTERACT_DISTANCE;
-    $('main').append('<div class="pc" style="top:' + this.y + ';left:'+this.x+';"></div>');
-  }
+    
+     }
 
   examine(object) {
     var self = this;
@@ -47,28 +48,26 @@ class Player {
   
   touch(object) {
     var self = this;
-    var xPos = object.x, yPos = object.y;
-
-    var currentPoint = new Point($('.pc').offset().left - $('main').offset().left, $('.pc').offset().top + $('.pc').height() - $('main').offset().top);
-    var destination = new Point(xPos - $('main').offset().left, yPos - $('main').offset().top + object.height);
-
-    var points = [];
+    var xPos = object.interaction_x, yPos = object.interaction_y;
+    console.log(xPos);
+    var destination = new Point(xPos, yPos);
     var path = this.location.walkpathNodes;
-
     var endPoint = getNearestCoordinates(path, destination);
-    var startPoint = getNearestCoordinates(path, currentPoint);
-console.log(startPoint);
-console.log(endPoint);
-    if (startPoint != endPoint) {
-      self.speak('Alright, hold on', 2000);
-      self.walkTo(self.location.walkpathNodes, xPos, yPos, function() {
-        console.log('done');
+
+    if (self.pathLocation.x != endPoint.x || self.pathLocation.y != endPoint.y) {
+      
+      self.walkTo(endPoint, function() {
         self.touch(object)
       });
+      return;
     }
-    console.log(object);
     if (object.is_locked) {
       this.speak('It won\'t open.', 2000);
+      return;
+    }
+    if (object.is_closed) {
+      object.openIfClosed();
+      return; 
     }
   }
 
@@ -95,7 +94,7 @@ console.log(endPoint);
   }
   
   positionSpeechBubble(div) {
-    $(div).css('left', this.x + $('main').offset().left).css('top', this.y - $(div).height() + $('main').offset().top);
+    $(div).css('left', $('.pc').offset().left-20).css('top', $('.pc').position().top - $(div).height() + 20);
   }
   
   speak(text, timer, callback) {
@@ -116,38 +115,34 @@ console.log(endPoint);
 
   speakTo(object) {
     var self = this;
-    if (object.description) {
-      this.speak(object.description);
+    if (object.speak_description) {
+      this.speak(object.speak_description);
     } else {
       $.getJSON(SERVICE_URL + 'object/' + object.id + '/speak', function(data) {
-        object.description = data.description;
+        object.speak_description = data.description;
         self.speak(data.description);
       });
     }
   }
   
-  walkTo(path, xPos, yPos, callback) {
-    console.log('move');
+  walkTo(destination, callback) {
+    var self = this;
     removeAllUIMenus();
     var points = [];
     var g = new Graph();
-    for (var i=0; i < path.length; i++) {
-      points.push(new Point(path[i].x, path[i].y, (path[i].vid).toString()));
-      var vertexes = path[i].connects_with.split(',');
+    for (var i=0; i < this.location.walkpathNodes.length; i++) {
+      points.push(new Point(this.location.walkpathNodes[i].x, this.location.walkpathNodes[i].y, (this.location.walkpathNodes[i].vid).toString()));
+      var vertexes = this.location.walkpathNodes[i].connects_with.split(',');
       var vertex = {};
       for (var s=0; s < vertexes.length; s++) {
-        var nextPoint = $.grep(path, function(e){ return (e.vid).toString() == (vertexes[s]).toString(); })[0];
+        var nextPoint = $.grep(this.location.walkpathNodes, function(e){ return (e.vid).toString() == (vertexes[s]).toString(); })[0];
         vertex[nextPoint.vid] = getPointDistance(points[i], nextPoint);
       }
-      g.addVertex((path[i].vid).toString(), vertex);
+      g.addVertex((this.location.walkpathNodes[i].vid).toString(), vertex);
     }
-    
-    var currentPoint = new Point($('.pc').offset().left - $('main').offset().left, $('.pc').offset().top + $('.pc').height() - $('main').offset().top);
-    var destination = new Point(xPos - $('main').offset().left, yPos - $('main').offset().top);
-
+    var destination = new Point(destination.x, destination.y);
     var endPoint = getNearestCoordinates(points, destination);
-    var startPoint = getNearestCoordinates(points, currentPoint);
-
+    var startPoint = getNearestCoordinates(points, self.pathLocation);
     var route = g.shortestPath(startPoint.id, endPoint.id).reverse();
     var path = [];
     for (var i=0; i < route.length; i++) {
@@ -168,11 +163,10 @@ console.log(endPoint);
   }
 
   animateWalk(array, start, callback) {
-    console.log('anim');
     var self = this;
     var baseY = 720;
     var imgObj = this.img_walkright;
-    if (array[array.length-1][0].x < ($('.pc').offset().left - $('main').offset().left)) {
+    if (array[array.length-1][0].x < self.x) {
       imgObj = this.img_walkleft;
     }
     var scale = 1;
@@ -190,8 +184,8 @@ console.log(endPoint);
       width: self.width * scale
     }, {
       step: function() {
-        self.x = $('.pc').position().left;
-        self.y = $('.pc').position().top;
+        self.x = $('.pc').position().left + ($('.pc').width()/2);
+        self.y = $('.pc').position().top - $('pc').height();
         $('.speechContainer').each(function(index, item) {
           self.positionSpeechBubble(item);
         });
@@ -200,8 +194,9 @@ console.log(endPoint);
       complete: function() {
         if (array[start] == array[array.length-1]) {
           self.updateImage(self.img_default, scale);
-          self.x = $('.pc').position().left;
-          self.y = $('.pc').position().top;
+          self.x = $('.pc').position().left + ($('.pc').width()/2);
+          self.y = $('.pc').position().top - $('pc').height();
+          self.pathLocation = array[start][0];
           $('.speechContainer').each(function(index, item) {
             self.positionSpeechBubble(item);
           });
@@ -210,7 +205,7 @@ console.log(endPoint);
           }
         } else {
           start++;
-          self.animateWalk(array, start);
+          self.animateWalk(array, start, callback);
         }
       }
     });
@@ -226,8 +221,6 @@ function Point(x, y, id) {
 function getPointDistance(point1, point2) {
   return Math.hypot(point2.x-point1.x, point2.y-point1.y);
 }
-
-
 
 function getNearestCoordinates(array, point) {
   var firstDistance = getPointDistance(point, array[0]);

@@ -15,20 +15,19 @@ class Area {
       var obj = new Item(objects[i].oid, objects[i].title,
                          this.id, objects[i].image_opened, objects[i].image_closed, objects[i].x,
                          objects[i].y, objects[i].is_closed, objects[i].has_inventory, objects[i].is_locked,
-                         objects[i].contained_in);
+                         objects[i].contained_in, objects[i].interaction_x, objects[i].interaction_y);
       this.items.push(obj);
     }
     this.walkpathNodes = nodes;
     this.loadWalkpath();
+    
   }
   
   loadObjects() {
     for (var i=0; i < this.objects.length; i++) {
       var area = $('<area coords="' + this.objects[i].coords + '" shape="' + this.objects[i].shape + '">');
       $('body').find('map#area_' + this.id).append(area);
-      addObjectClick
       $(this.objects[i]).click(function(event) {
-        console.log('clicked');
         event.preventDefault();
         event.stopPropagation();
       });
@@ -42,7 +41,9 @@ class Area {
     $(area).click(function(event) {
       event.preventDefault();
       event.stopPropagation();
-      pc.walkTo(self.walkpathNodes, event.pageX, event.pageY);
+      console.log('X: ' + (event.pageX - $('main').offset().left));
+      console.log('Y: ' + (event.pageY - $('main').offset().top));
+      pc.walkTo(new Point(event.pageX - $('main').offset().left, event.pageY - $('main').offset().top));
     });
   }
   
