@@ -122,3 +122,43 @@ section.controls .icon:hover {
   position:absolute;
   cursor:pointer;
 }
+
+#player_inventory .bg {
+  position: absolute;
+  width: 90%;
+  height: 90%;
+  background: #fff;
+  top: 5%;
+  left: 5%;
+  opacity: 0.9;
+  border-radius: 15px;
+  border: 3px solid #000;
+}
+#player_inventory .fg {
+  position: absolute;
+  width: 90%;
+  height: 90%;
+  top: 5%;
+  left: 5%;
+  padding:20px;
+}
+#player_inventory .fg header {
+  position:relative;
+  top:-10px;
+  text-align:right;
+}
+#player_inventory .fg header i {
+  cursor:pointer;
+  color:#1bbb45;
+}
+#player_inventory .fg header i:hover {
+  opacity:0.8;
+}
+#player_inventory .fg table {
+  width:100%;
+  height:95%;
+  border-collapse:collapse;
+}
+#player_inventory .fg table td {
+  border: 1px solid #000;
+}

@@ -78,7 +78,6 @@ function interact(action, objectID) {
       pc.speakTo(item);
       break;
     case 'touch':
-      pc.speak('Alright, hold on', 2000);
       pc.touch(item);
       break;
   }

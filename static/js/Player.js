@@ -1,3 +1,4 @@
+
 class Player {
   
   constructor (area) {
@@ -49,26 +50,48 @@ class Player {
   touch(object) {
     var self = this;
     var xPos = object.interaction_x, yPos = object.interaction_y;
-    console.log(xPos);
     var destination = new Point(xPos, yPos);
     var path = this.location.walkpathNodes;
     var endPoint = getNearestCoordinates(path, destination);
-
+    console.log(self.pathLocation);
+    console.log(endPoint);
     if (self.pathLocation.x != endPoint.x || self.pathLocation.y != endPoint.y) {
-      
+      self.speak('Alright, hold on', 2000);
       self.walkTo(endPoint, function() {
         self.touch(object)
       });
       return;
     }
+    console.log(object);
     if (object.is_locked) {
       this.speak('It won\'t open.', 2000);
       return;
     }
     if (object.is_closed) {
       object.openIfClosed();
+      self.speak('Fine, it\'s open now.', 2000);
       return; 
     }
+    if (object.has_inventory) {
+      self.openInventory()
+    }
+  }
+  
+  openInventory() {
+    var self = this;
+    $.get(TEMPLATE_URL + 'inventory.html', function(template) {
+      template = $(template);
+      $(template).find('header > i').click(function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        self.closeInventory();
+      });
+      $('main').append(template);
+    });
+  }
+  
+  closeInventory() {
+    $('#player_inventory').remove();
   }
 
   assignSpeechTimer(timer, callback) {
