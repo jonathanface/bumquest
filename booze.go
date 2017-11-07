@@ -90,6 +90,7 @@ func handleArea(w http.ResponseWriter, r *http.Request) {
   log.Println("get area")
   isValid, aid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
   if (!isValid) {
+    badRequest(w, "Bad Request")
     return
   }
   var area = Area{}
@@ -139,6 +140,7 @@ func handleSpeakAction(w http.ResponseWriter, r *http.Request) {
   log.Println("handle speak");
   isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
   if (!isValid) {
+    badRequest(w, "Bad Request")
     return
   }
   var info = SpeakInfo{}
@@ -170,6 +172,7 @@ func handleLookAction(w http.ResponseWriter, r *http.Request) {
   log.Println("get object info")
   isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
   if (!isValid) {
+    badRequest(w, "Bad Request")
     return
   }
   var info = LookInfo{}
@@ -190,6 +193,7 @@ func handleLookAction(w http.ResponseWriter, r *http.Request) {
 func handleTouchAction(w http.ResponseWriter, r *http.Request) {
   isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
   if (!isValid) {
+    badRequest(w, "Bad Request")
     return
   }
   var info = TouchInfo{}
@@ -204,12 +208,48 @@ func handleTouchAction(w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, string(jsonData))
 }
 
+func handleObjectInventory(w http.ResponseWriter, r *http.Request) {
+  log.Println("handling object inventory request")
+  isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+  db := DBUtils.OpenDB();
+  rows, err := db.Query("select objectID from object_inventory WHERE containerID = ?", oid)
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  
+  var objects []Object
+  for rows.Next() {
+    var currentOid int
+    rows.Scan(&currentOid)
+    log.Println(currentOid)
+    objRow := db.QueryRow("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in,has_inventory,interact_x, interact_y from objects WHERE objectID = ?", currentOid)
+    object := Object{}
+    err = objRow.Scan(&object.Oid, &object.Title, &object.Image_opened, &object.Image_closed, &object.X, &object.Y, &object.Is_closed, &object.Is_locked, &object.Contained_in, &object.Has_inventory, &object.Interact_x, &object.Interact_y)
+    if err != nil {
+      log.Fatal(err)
+    }
+    objects = append(objects, object)
+    DBUtils.CloseDB(db)
+    jsonData, err := json.Marshal(objects)
+    if (err != nil) {
+      serverError(w, err.Error())
+      return
+    }
+    fmt.Fprintf(w, string(jsonData))
+  }
+}
+
 func main() {
   rtr := mux.NewRouter()
   rtr.HandleFunc(SERVICE_PATH + "/area/{[0-9]+}", handleArea).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/object/{[0-9]+}/look", handleLookAction).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/object/{[0-9]+}/speak", handleSpeakAction).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/object/{[0-9]+}/touch", handleTouchAction).Methods("GET")
+  rtr.HandleFunc(SERVICE_PATH + "/object/{[0-9]+}/inventory", handleObjectInventory).Methods("GET")
   rtr.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
   http.Handle("/", rtr)
   

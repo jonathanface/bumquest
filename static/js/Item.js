@@ -17,6 +17,7 @@ class Item {
     this.width;
     this.image_opened = image_opened;
     this.image_closed = image_closed;
+    this.inventory_open = false;
 
     if (this.is_closed == 1) {
       var imgURL = OBJ_URL + this.image_closed;
@@ -43,7 +44,7 @@ class Item {
       showMenu(this, event.pageX - $('main').offset().left, event.pageY - $('main').offset().top);
     });
   }
-  
+
   openIfClosed() {
     if (this.is_closed && !this.is_locked) {
       this.is_closed = false;
@@ -56,5 +57,28 @@ class Item {
       $(this.img).attr('src', this.OBJ_URL + this.image_closed);
     }
   }
-
+  openInventory() {
+    var self = this;
+    this.inventory_open = true;
+    $.get(TEMPLATE_URL + 'item_inventory.html', function(template) {
+      template = $(template);
+      var img = $('<img src="' + self.OBJ_URL + self.image_opened + '">');
+      $(template).find('.objContents > figure').append(img);
+      $(template).find('.objContents > figure').append('<figcaption>' + ucwords(self.title) + '</figcaption>');
+      $(template).find('header > i').click(function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        self.closeInventory();
+      });
+      $('main').append(template);
+      $.get(SERVICE_URL + 'object/' + self.id + '/inventory', function(data) {
+        console.log(data);
+      });
+    });
+  }
+  
+  closeInventory() {
+    $('#object_inventory').remove();
+    this.inventory_open = false;
+  }
 }

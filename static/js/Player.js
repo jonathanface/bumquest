@@ -6,6 +6,7 @@ class Player {
     this.location = area;
     this.width;
     this.height;
+    this.inventory_open = false;
 
     this.img_default = document.createElement('img');
     this.img_default.onload = function() {
@@ -73,12 +74,13 @@ class Player {
       return; 
     }
     if (object.has_inventory) {
-      self.openInventory()
+      object.openInventory();
     }
   }
   
   openInventory() {
     var self = this;
+    self.inventory_open = true;
     $.get(TEMPLATE_URL + 'inventory.html', function(template) {
       template = $(template);
       $(template).find('header > i').click(function(event) {
@@ -92,6 +94,7 @@ class Player {
   
   closeInventory() {
     $('#player_inventory').remove();
+    this.inventory_open = false;
   }
 
   assignSpeechTimer(timer, callback) {

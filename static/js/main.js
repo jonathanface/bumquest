@@ -6,6 +6,8 @@ const PC_BASE_HEIGHT = 300;
 const SPEECH_TIMER = 8000;
 const MENU_TIMER = 3000;
 
+const EVENT_AREA_LOADED = 'areaLoaded';
+
 var speechTimer, menuTimer;
 var pc;
 
@@ -13,10 +15,22 @@ function loadArea(areaID) {
   $.getJSON(SERVICE_URL + 'area/' + areaID, function(data) {
     var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, pc, data.objects, data.walkpath_nodes);
     pc = new Player(area);
+    $(window).trigger(EVENT_AREA_LOADED);
   });
 }
 
 $(document).ready(function() {
+  $(window).on(EVENT_AREA_LOADED, function() {
+    $('.controls').find('.icon:eq(0)').click(function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (pc.inventory_open) {
+        pc.closeInventory();
+      } else {
+        pc.openInventory();
+      }
+    });
+  });
   loadArea(1);
 });
 
@@ -100,11 +114,19 @@ function showMenu(object, xPos, yPos) {
       });
     });
     $(template).fadeTo('fast', 1, function() {
-      assignMenuTimer(template);
+      //assignMenuTimer(template);
     });
   });
 }
 
 function rand(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function ucwords(str) {
+  str = str.toLowerCase();
+  return str.replace(/(^([a-zA-Z\p{M}]))|([ -][a-zA-Z\p{M}])/g,
+  	function(s){
+  	  return s.toUpperCase();
+	});
 }

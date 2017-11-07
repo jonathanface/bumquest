@@ -10,6 +10,7 @@
 html, body {
   margin:0px;
   padding:20px;
+  font-family:Tahoma, Geneva, sans-serif;
 }
 
 body {
@@ -123,7 +124,7 @@ section.controls .icon:hover {
   cursor:pointer;
 }
 
-#player_inventory .bg {
+#player_inventory .bg, #object_inventory .bg {
   position: absolute;
   width: 90%;
   height: 90%;
@@ -134,31 +135,47 @@ section.controls .icon:hover {
   border-radius: 15px;
   border: 3px solid #000;
 }
-#player_inventory .fg {
+#player_inventory .fg, #object_inventory .fg {
   position: absolute;
   width: 90%;
   height: 90%;
   top: 5%;
   left: 5%;
   padding:20px;
+  z-index:100;
 }
-#player_inventory .fg header {
+#player_inventory .fg header, #object_inventory .fg header {
   position:relative;
   top:-10px;
   text-align:right;
 }
-#player_inventory .fg header i {
+#player_inventory .fg header i, #object_inventory .fg header i {
   cursor:pointer;
   color:#1bbb45;
 }
-#player_inventory .fg header i:hover {
+#player_inventory .fg header i:hover, #object_inventory .fg header i:hover {
   opacity:0.8;
 }
-#player_inventory .fg table {
+#player_inventory, #object_inventory .fg table {
   width:100%;
-  height:95%;
   border-collapse:collapse;
 }
-#player_inventory .fg table td {
+#player_inventory .fg table td, #object_inventory .fg table td {
   border: 1px solid #000;
+  width:100px;
+  height:100px;
+}
+
+#object_inventory figure {
+  text-align:center;
+  margin:0;
+}
+#object_inventory figure figcaption {
+  margin-top:5px;
+}
+#object_inventory .objContents {
+  width:25%;
+  padding-right:10px;
+  height:100%;
+  overflow:hidden;
 }
