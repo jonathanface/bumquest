@@ -54,8 +54,6 @@ class Player {
     var destination = new Point(xPos, yPos);
     var path = this.location.walkpathNodes;
     var endPoint = getNearestCoordinates(path, destination);
-    console.log(self.pathLocation);
-    console.log(endPoint);
     if (self.pathLocation.x != endPoint.x || self.pathLocation.y != endPoint.y) {
       self.speak('Alright, hold on', 2000);
       self.walkTo(endPoint, function() {
@@ -63,7 +61,6 @@ class Player {
       });
       return;
     }
-    console.log(object);
     if (object.is_locked) {
       this.speak('It won\'t open.', 2000);
       return;

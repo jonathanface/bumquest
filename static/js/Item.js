@@ -71,8 +71,57 @@ class Item {
         self.closeInventory();
       });
       $('main').append(template);
-      $.get(SERVICE_URL + 'object/' + self.id + '/inventory', function(data) {
-        console.log(data);
+      $('.playerInventory td').each(function(index, item) {
+        $(item).droppable({
+          drop: function(event, ui) {
+            var cloned = $(ui.draggable).clone();
+            $(this).append(cloned);
+            $(cloned).draggable({
+              containment: '#object_inventory .fg > div',
+              helper: 'clone',
+              appendTo: '#object_inventory .fg > div',
+              start: function(event, ui) {
+                $(this).remove();
+              }
+            });
+          }
+        });
+        $(item).children('div').draggable({
+          containment: '#object_inventory .fg > div',
+          helper: 'clone',
+          appendTo: '#object_inventory .fg > div',
+          start: function(event, ui) {
+            $(this).remove();
+          }
+        });
+      });
+      $.getJSON(SERVICE_URL + 'object/' + self.id + '/inventory', function(data) {
+        $(data).each(function(index, item) {
+          var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image_closed + '" alt="' + item.title + '" title="' + item.title + '"></div>');
+          $($('.objectItems').find('td')[index]).html(div);
+          $(div).draggable({
+            containment: '#object_inventory .fg > div',
+            helper: 'clone',
+            appendTo: '#object_inventory .fg > div',
+            start: function(event, ui) {
+              $(this).remove();
+            }
+          });
+        });
+        $('.objectItems').find('td').droppable({
+          drop: function(event, ui) {
+            var cloned = $(ui.draggable).clone();
+            $(this).append(cloned);
+            $(cloned).draggable({
+              containment: '#object_inventory .fg > div',
+              helper: 'clone',
+              appendTo: '#object_inventory .fg > div',
+              start: function(event, ui) {
+                $(this).remove();
+              }
+            });
+          }
+        });
       });
     });
   }
