@@ -10,12 +10,61 @@ const EVENT_AREA_LOADED = 'areaLoaded';
 
 var speechTimer, menuTimer;
 var pc;
+var movement, keypresses = {};
 
 function loadArea(areaID) {
   $.getJSON(SERVICE_URL + 'area/' + areaID, function(data) {
     var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, pc, data.objects, data.walkpath_nodes);
     pc = new Player(area);
+    configureKeyboard();
+    movement = setInterval(trackMovement, 20);
     $(window).trigger(EVENT_AREA_LOADED);
+  });
+}
+
+var expletives = ['Ow!', 'Fuck!', 'Shit!'];
+
+function expletive() {
+  return expletives[rand(0, expletives.length-1)];
+}
+
+
+
+function trackMovement() {
+  for (var direction in keypresses) {
+    if (!keypresses.hasOwnProperty(direction)) continue;
+    var ctx = $('main > canvas')[0].getContext('2d');
+    console.log();
+    switch(parseInt(direction)) {
+      case 37://left
+        if (ctx.isPointInPath(pc.x-5, pc.y + pc.height)) {
+          pc.walk('left');
+        } else {
+          pc.say(expletive(), 500);
+        }
+        break;
+      case 39://right
+        if (ctx.isPointInPath(pc.x+5+pc.width, pc.y + pc.height)) {
+          pc.walk('right');
+        } else {
+          pc.say(expletive(), 500);
+        }
+        break;
+      case 38://up
+        break;
+      case 40://down
+        break;
+    }
+  }
+}
+
+function configureKeyboard() {
+  $(document).off('keydown').keydown(function(event) {
+    keypresses[event.which] = true;
+  });
+  $(document).off('keyup').keyup(function(event) {
+    delete keypresses[event.which];
+    pc.halt();
   });
 }
 

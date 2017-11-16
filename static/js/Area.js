@@ -4,7 +4,7 @@ class Area {
     this.id = id;
     this.title = title;
     this.description = description;
-    this.image = image;
+    this.imageURL = image;
     const AREA_URL = 'img/areas/';
     this.AREA_URL = AREA_URL;
     this.walkPath = walkPath;
@@ -41,15 +41,30 @@ class Area {
     $(area).click(function(event) {
       event.preventDefault();
       event.stopPropagation();
-      console.log('X: ' + (event.pageX - $('main').offset().left));
-      console.log('Y: ' + (event.pageY - $('main').offset().top));
-      pc.walkTo(new Point(event.pageX - $('main').offset().left, event.pageY - $('main').offset().top));
+      //pc.walkTo(new Point(event.pageX - $('main').offset().left, event.pageY - $('main').offset().top));
     });
   }
   
   loadBackground() {
-    $('main').html('<div class="area"><img src="' + this.AREA_URL + this.image + '" usemap="area_' + this.id + '"></div>');
-    $('body').append('<map id="area_' + this.id + '" name="area_' + this.id + '">');
+    var self = this;
+    var img = new Image();
+    img.onload = function() {
+      var canvas = $('main canvas')[0];
+      var ctx = canvas.getContext('2d');
+      canvas.width = $(canvas).width();
+      canvas.height = $(canvas).height();
+      ctx.drawImage(img, 0, 0, img.width, img.height);
+      var coords = self.walkPath.split(',');
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      var path = ctx.beginPath();
+      ctx.moveTo(coords[0], coords[1]);
+      for (var i=2; i < coords.length; i+=2) {
+        ctx.lineTo(coords[i], coords[i+1]);
+      }
+      ctx.closePath();
+      ctx.fill();
+    };
+    img.src = this.AREA_URL + this.imageURL;
   }
   
   

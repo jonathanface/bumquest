@@ -34,7 +34,7 @@ class Player {
     var self = this;
     if (object.description) {
       this.updateImage(this.img_talk);
-      this.speak(object.description);
+      this.say(object.description);
     } else {
       $.getJSON(SERVICE_URL + 'object/' + object.id + '/look', function(data) {
         var description = data.description;
@@ -43,7 +43,7 @@ class Player {
         }
         object.description = description;
         self.updateImage(self.img_talk);
-        self.speak(description);
+        self.say(description);
       });
     }
   }
@@ -55,19 +55,19 @@ class Player {
     var path = this.location.walkpathNodes;
     var endPoint = getNearestCoordinates(path, destination);
     if (self.pathLocation.x != endPoint.x || self.pathLocation.y != endPoint.y) {
-      self.speak('Alright, hold on', 2000);
+      self.say('Alright, hold on', 2000);
       self.walkTo(endPoint, function() {
         self.touch(object)
       });
       return;
     }
     if (object.is_locked) {
-      this.speak('It won\'t open.', 2000);
+      this.say('It won\'t open.', 2000);
       return;
     }
     if (object.is_closed) {
       object.openIfClosed();
-      self.speak('Fine, it\'s open now.', 2000);
+      self.say('Fine, it\'s open now.', 2000);
       return; 
     }
     if (object.has_inventory) {
@@ -120,10 +120,10 @@ class Player {
     $(div).css('left', $('.pc').offset().left-20).css('top', $('.pc').position().top - $(div).height() + 20);
   }
   
-  speak(text, timer, callback) {
+  say(text, timer, callback) {
     var self = this;
     if ($('.speechContainer').length) {
-      this.shutup(function() {self.speak(text, timer, callback)});
+      this.shutup(function() {self.say(text, timer, callback)});
       return;
     }
     var div = $('<div class="speechContainer"></div>');
@@ -139,11 +139,11 @@ class Player {
   speakTo(object) {
     var self = this;
     if (object.speak_description) {
-      this.speak(object.speak_description);
+      this.say(object.speak_description);
     } else {
       $.getJSON(SERVICE_URL + 'object/' + object.id + '/speak', function(data) {
         object.speak_description = data.description;
-        self.speak(data.description);
+        self.say(data.description);
       });
     }
   }
@@ -176,6 +176,37 @@ class Player {
     }
   }
   
+  walk(direction) {
+    var self = this;
+    var scale = 1;
+    switch(direction) {
+      case 'left':
+        self.updateImage(self.img_walkleft, scale);
+        $('.pc').stop().animate({
+          left: "-=5"
+        }, 0, function() {
+          self.x -= 5;
+          //self.y = self.pathLocation.y - self.height;
+        });
+        break;
+      case 'right':
+        self.updateImage(self.img_walkright, scale);
+        $('.pc').stop().animate({
+          left: "+=5"
+        }, 0, function() {
+          self.x += 5;
+          //self.y = self.pathLocation.y - self.height;
+        });
+        break;
+    }
+    
+  }
+  
+  halt() {
+    $('.pc').stop();
+    this.updateImage(this.img_default);
+  }
+  
   updateImage(imgObj, scale) {
     if (!scale) {
       scale = 1;
@@ -184,6 +215,7 @@ class Player {
     this.height = imgObj.height * scale;
     $('.pc').css('background-image', 'url(' + imgObj.src + ')');
   }
+  
 
   animateWalk(array, start, callback) {
     var self = this;
