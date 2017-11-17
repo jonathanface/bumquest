@@ -13,16 +13,27 @@ class Player {
       self.width = self.img_default.width;
       self.height = self.img_default.height;
       self.pathLocation = self.location.walkpathNodes[0];
-      self.x = self.pathLocation.x - (self.width/2);
-      self.y = self.pathLocation.y - self.height;
-      $('main').append('<div class="pc" style="top:' + (self.pathLocation.y - self.height) + ';left:' + (self.pathLocation.x - (self.width/2)) + ';"></div>');
+      self.x = 65;
+      self.y = area.lowPoint - self.height;
+      self.initial_height = self.height;
+      self.initial_width = self.width;
+      $('main').append('<div class="pc" style="top:' + self.y + ';left:' + self.x + ';"></div>');
     }
+    
     this.img_default.src = 'img/people/bum_default.png';
     this.initial_default_img = this.img_default;
+    this.current_img = this.img_default;
+    
+    this.img_backwards = document.createElement('img');
+    this.img_backwards.src = 'img/people/bum_backwards.png';
     this.img_walkleft = document.createElement('img');
     this.img_walkleft.src = 'img/animations/bum_walk_left.gif';
     this.img_walkright = document.createElement('img');
     this.img_walkright.src = 'img/animations/bum_walk_right.gif';
+    this.img_walkup = document.createElement('img');
+    this.img_walkup.src = 'img/animations/bum_walk_up.gif';
+    this.img_walkdown = document.createElement('img');
+    this.img_walkdown.src = 'img/animations/bum_walk_down.gif';
     this.img_talk = document.createElement('img');
     this.img_talk.src = 'img/animations/bum_talk.gif';
     const MIN_INTERACT_DISTANCE = 100;
@@ -106,7 +117,6 @@ class Player {
   
   shutup(callback) {
     clearTimeout(speechTimer);
-    this.img_default = this.initial_default_img;
     this.updateImage(this.img_default);
     $('.speechContainer').fadeOut('fast', function() {
       $(this).remove();
@@ -131,8 +141,9 @@ class Player {
     $(document.body).append(div);
     self.positionSpeechBubble(div);
     $(div).fadeTo('fast', 1);
-    this.updateImage(this.img_talk);
-    this.img_default = this.img_talk;
+    if (this.img_default != this.img_backwards) {
+      this.updateImage(this.img_talk);
+    }
     this.assignSpeechTimer(timer, callback);
   }
 
@@ -172,37 +183,84 @@ class Player {
       path.push($.grep(points, function(e){ return e.id == route[i]; }));
     }
     if (path.length) {
+      disableKeyboard();
       this.animateWalk(path, 0, callback);
     }
   }
   
   walk(direction) {
     var self = this;
-    var scale = 1;
+    console.log(self.x);
     switch(direction) {
       case 'left':
-        self.updateImage(self.img_walkleft, scale);
+        self.img_default = self.initial_default_img;
+        if (self.currentImg != self.img_walkleft) {
+          self.updateImage(self.img_walkleft);
+        }
+        self.x -= 5;
         $('.pc').stop().animate({
           left: "-=5"
         }, 0, function() {
-          self.x -= 5;
-          //self.y = self.pathLocation.y - self.height;
+          
         });
         break;
       case 'right':
-        self.updateImage(self.img_walkright, scale);
+        self.img_default = self.initial_default_img;
+        if (self.currentImg != self.img_walkright) {
+          self.updateImage(self.img_walkright);
+        }
+        self.x += 5;
         $('.pc').stop().animate({
           left: "+=5"
         }, 0, function() {
-          self.x += 5;
-          //self.y = self.pathLocation.y - self.height;
+          
+        });
+        break;
+        case 'up':
+        self.img_default = self.img_backwards;
+        if (self.currentImg != self.img_walkup) {
+          self.updateImage(self.img_walkup);
+        }
+        var yRange = self.location.lowPoint - self.location.highPoint;
+        var distanceTraveled = self.location.lowPoint - (self.y + self.height);
+        var percTraveled = (distanceTraveled/yRange);
+        self.height = self.initial_height - (self.height * percTraveled);
+        var heightPercDiff = self.height / self.initial_height;
+        self.width = self.initial_width * heightPercDiff;
+        self.y -= 5;
+        $('.pc').stop().animate({
+          top: "-=5",
+          height: self.height,
+          width: self.width
+        }, 0, function() {
+
+        });
+        break;
+      case 'down':
+        self.img_default = self.initial_default_img;
+        if (self.currentImg != self.img_walkdown) {
+          self.updateImage(self.img_walkdown);
+        }
+        var yRange = self.location.lowPoint - self.location.highPoint;
+        var feetY = self.location.lowPoint - (self.y + self.height);
+        var percTraveled = (feetY/yRange);
+        self.height = self.initial_height - (self.height * percTraveled);
+        var heightPercDiff = self.height / self.initial_height;
+        self.width = self.initial_width * heightPercDiff;
+        self.y += 5;
+        $('.pc').stop().animate({
+          top: "+=5",
+          height: self.height,
+          width: self.width
+        }, 0, function() {
+
         });
         break;
     }
     
   }
   
-  halt() {
+  halt(direction) {
     $('.pc').stop();
     this.updateImage(this.img_default);
   }
@@ -211,8 +269,9 @@ class Player {
     if (!scale) {
       scale = 1;
     }
-    this.width = imgObj.width * scale;
-    this.height = imgObj.height * scale;
+    this.currentImg = imgObj;
+    //this.width = imgObj.width * scale;
+    //this.height = imgObj.height * scale;
     $('.pc').css('background-image', 'url(' + imgObj.src + ')');
   }
   
@@ -239,8 +298,8 @@ class Player {
       width: self.width * scale
     }, {
       step: function() {
-        self.x = $('.pc').position().left + ($('.pc').width()/2);
-        self.y = $('.pc').position().top - $('pc').height();
+        self.x = $('.pc').position().left;
+        self.y = $('.pc').position().top;
         $('.speechContainer').each(function(index, item) {
           self.positionSpeechBubble(item);
         });
@@ -249,12 +308,14 @@ class Player {
       complete: function() {
         if (array[start] == array[array.length-1]) {
           self.updateImage(self.img_default, scale);
-          self.x = $('.pc').position().left + ($('.pc').width()/2);
-          self.y = $('.pc').position().top - $('pc').height();
+          self.x = $('.pc').position().left;
+          self.y = $('.pc').position().top;
           self.pathLocation = array[start][0];
           $('.speechContainer').each(function(index, item) {
             self.positionSpeechBubble(item);
           });
+          console.log(self.x);
+          assignKeyboard();
           if (callback) {
             callback();
           }

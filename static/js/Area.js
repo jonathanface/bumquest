@@ -1,6 +1,6 @@
 class Area {
   
-  constructor (id, title, description, image, walkPath, walkType, player, objects, nodes) {
+  constructor (id, title, description, image, walkPath, walkType, objects, nodes) {
     this.id = id;
     this.title = title;
     this.description = description;
@@ -10,6 +10,8 @@ class Area {
     this.walkPath = walkPath;
     this.walkType = walkType;
     this.loadBackground();
+    this.lowPoint = 755;
+    this.highPoint = 375;
     this.items = [];
     for (var i=0; i < objects.length; i++) {
       var obj = new Item(objects[i].oid, objects[i].title,
@@ -56,6 +58,7 @@ class Area {
       ctx.drawImage(img, 0, 0, img.width, img.height);
       var coords = self.walkPath.split(',');
       ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillStyle = 'pink';
       var path = ctx.beginPath();
       ctx.moveTo(coords[0], coords[1]);
       for (var i=2; i < coords.length; i+=2) {

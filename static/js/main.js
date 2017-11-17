@@ -14,9 +14,9 @@ var movement, keypresses = {};
 
 function loadArea(areaID) {
   $.getJSON(SERVICE_URL + 'area/' + areaID, function(data) {
-    var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, pc, data.objects, data.walkpath_nodes);
+    var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, data.objects, data.walkpath_nodes);
     pc = new Player(area);
-    configureKeyboard();
+    assignKeyboard();
     movement = setInterval(trackMovement, 20);
     $(window).trigger(EVENT_AREA_LOADED);
   });
@@ -34,9 +34,9 @@ function trackMovement() {
   for (var direction in keypresses) {
     if (!keypresses.hasOwnProperty(direction)) continue;
     var ctx = $('main > canvas')[0].getContext('2d');
-    console.log();
     switch(parseInt(direction)) {
       case 37://left
+        console.log(pc.x);
         if (ctx.isPointInPath(pc.x-5, pc.y + pc.height)) {
           pc.walk('left');
         } else {
@@ -51,21 +51,45 @@ function trackMovement() {
         }
         break;
       case 38://up
+        if (ctx.isPointInPath(pc.x+pc.width/2, Math.abs(pc.y + pc.height - 6))) {
+          pc.walk('up');
+        } else {
+          $('.pc').stop();
+          pc.say(expletive(), 500);
+        }
         break;
       case 40://down
+        if (ctx.isPointInPath(pc.x+pc.width/2, pc.y + pc.height + 6)) {
+          pc.walk('down');
+        } else {
+          $('.pc').stop();
+          pc.say(expletive(), 500);
+        }
         break;
     }
   }
 }
 
-function configureKeyboard() {
+function assignKeyboard() {
   $(document).off('keydown').keydown(function(event) {
+    event.preventDefault();
     keypresses[event.which] = true;
   });
   $(document).off('keyup').keyup(function(event) {
+    event.preventDefault();
     delete keypresses[event.which];
-    pc.halt();
+    console.log('key: ' + event.which);
+    if (event.which == 38) {
+      pc.halt('up');
+    } else {
+      pc.halt();
+    }
   });
+}
+
+function disableKeyboard() {
+  $(document).off('keydown');
+  $(document).off('keyup');
 }
 
 $(document).ready(function() {
