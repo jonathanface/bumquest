@@ -89,7 +89,7 @@ class Item {
                   $(this).remove();
                 }
               });
-              $.post(SERVICE_URL + 'object/' + cloned.attr('data-objid') + '/take/' + self.id, function(data) {
+              $.post(SERVICE_URL + 'item/' + cloned.attr('data-objid') + '/take/' + self.id, function(data) {
                 console.log(data);
               });
             }
@@ -103,7 +103,7 @@ class Item {
             }
           });
         });
-        $.getJSON(SERVICE_URL + 'object/' + self.id + '/inventory', function(data) {
+        $.getJSON(SERVICE_URL + 'item/' + self.id + '/inventory', function(data) {
           $(data).each(function(index, item) {
             var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image_closed + '" alt="' + item.title + '" title="' + item.title + '"></div>');
             $($('.objectItems').find('td')[index]).html(div);
@@ -129,7 +129,7 @@ class Item {
                 }
               });
               $.ajax({
-                url: SERVICE_URL + 'object/' + cloned.attr('data-objid') + '/drop/' + self.id,
+                url: SERVICE_URL + 'item/' + cloned.attr('data-objid') + '/drop/' + self.id,
                 type: 'PUT',
                 success: function(result) {
                     // Do something with the result

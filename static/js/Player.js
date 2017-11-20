@@ -61,7 +61,7 @@ class Player {
       this.updateImage(this.img_talk);
       this.say(object.description);
     } else {
-      $.getJSON(SERVICE_URL + 'object/' + object.id + '/look', function(data) {
+      $.getJSON(SERVICE_URL + 'item/' + object.id + '/look', function(data) {
         var description = data.description;
         if (data.is_closed == 1) {
           description += '<br>It\'s closed.';
@@ -176,7 +176,7 @@ class Player {
     if (object.speak_description) {
       this.say(object.speak_description);
     } else {
-      $.getJSON(SERVICE_URL + 'object/' + object.id + '/speak', function(data) {
+      $.getJSON(SERVICE_URL + 'item/' + object.id + '/speak', function(data) {
         object.speak_description = data.description;
         self.say(data.description);
       });
@@ -221,7 +221,6 @@ class Player {
     var self = this;
     removeAllUIMenus();
     var ctx = $('main > canvas')[0].getContext('2d');
-    //console.log(self.height);
     switch(direction) {
       case 'left':
         if (ctx.isPointInPath(self.x-5 + self.width/2, self.y + self.height)) {
@@ -261,7 +260,7 @@ class Player {
         break;
         case 'up':
         var yRange = self.location.lowPoint - self.location.highPoint;
-        var distanceTraveled = self.location.lowPoint - (self.y + self.height);
+        var distanceTraveled = Math.abs(Math.round(self.location.lowPoint - (self.y + self.height)));
         var percTraveled = (distanceTraveled/yRange).toFixed(2);
         var tempH = self.initial_height - (self.height * percTraveled);
         var heightPercDiff = tempH / self.initial_height;
@@ -291,8 +290,8 @@ class Player {
         break;
       case 'down':
         var yRange = self.location.lowPoint - self.location.highPoint;
-        var feetY = self.location.lowPoint - (self.y + self.height);
-        var percTraveled = (feetY/yRange).toFixed(2);
+        var distanceTraveled = Math.abs(Math.round(self.location.lowPoint - (self.y + self.height)));
+        var percTraveled = (distanceTraveled/yRange).toFixed(2);
         var tempH = self.initial_height - (self.height * percTraveled);
         var heightPercDiff = tempH / self.initial_height;
         var tempW = self.initial_width * heightPercDiff;
@@ -374,7 +373,6 @@ class Player {
           $('.speechContainer').each(function(index, item) {
             self.positionSpeechBubble(item);
           });
-          console.log(self.x);
           assignKeyboard();
           if (callback) {
             callback();

@@ -16,8 +16,7 @@ var movement, keypresses = {};
 
 function loadArea(areaID) {
   $.getJSON(SERVICE_URL + 'area/' + areaID, function(data) {
-    console.log(data);
-    var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, data.objects, data.walkpath_nodes, data.pedestrian_min_y, data.pedestrian_max_y);
+    var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, data.items, data.walkpath_nodes, data.pedestrian_min_y, data.pedestrian_max_y);
     $(area).on(EVENT_AREA_LOADED, function() {
       $('.controls').find('.icon:eq(0)').click(function(event) {
         event.preventDefault();
@@ -187,11 +186,9 @@ function removeAllUIMenus() {
 function interact(action, objectID) {
   removeAllSpeech();
   var item = $.grep(pc.location.items, function(e){ return e.id == objectID; })[0];
-  console.log('obj: ' + objectID);
   if (objectID == 'pc') {
     item = pc;
   }
-  console.log(item);
   switch(action) {
     case 'look':
       pc.examine(item);
