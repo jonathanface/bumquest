@@ -8,6 +8,7 @@ class Player {
     this.width;
     this.height;
     this.inventory_open = false;
+    this.isBabbling = false;
 
     this.img_default = document.createElement('img');
     this.img_default.onload = function() {
@@ -137,7 +138,7 @@ class Player {
   shutup(callback) {
     clearTimeout(speechTimer);
     this.updateImage(this.img_default);
-    $('.speechContainer').fadeOut('fast', function() {
+    $('.pcTalk').fadeOut('fast', function() {
       $(this).remove();
       if (callback) {
         callback();
@@ -151,11 +152,11 @@ class Player {
   
   say(text, timer, callback) {
     var self = this;
-    if ($('.speechContainer').length) {
+    if ($('.pcTalk').length) {
       this.shutup(function() {self.say(text, timer, callback)});
       return;
     }
-    var div = $('<div class="speechContainer"></div>');
+    var div = $('<div class="speechContainer pcTalk"></div>');
     $(div).append('<div class="speechBubble">' + text + '</div>');
     $(document.body).append(div);
     self.positionSpeechBubble(div);
@@ -183,9 +184,25 @@ class Player {
     }
   }
   
-  babble() {
-    disableKeyboard();
-    this.say("BLAH BLAH THE GOVERNMENT SHIT COCK NUMBERS AWAIT ME!!");
+  babble(step) {
+    if (!step) {
+      step = 0;
+    }
+    var self = this;
+    this.isBabbling = true;
+    disableUI();
+    if (step < PC_BABBLE_ATTEMPTS) {
+      this.say(generateDrunkenBabble(), 5000, function() {
+        step++;
+        setTimeout(function() {
+          self.babble(step)
+        }, rand(3000, 6000));
+      });
+    } else {
+      this.isBabbling = false;
+      enableUI();
+      endNarration();
+    }
   }
   
   walkTo(destination, callback) {
@@ -384,6 +401,11 @@ class Player {
       }
     });
   }
+}
+
+function generateDrunkenBabble() {
+  var text = '';
+  
 }
 
 function Point(x, y, id) {

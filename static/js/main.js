@@ -7,12 +7,14 @@ const SERVICE_URL = 'service/';
 const PC_BASE_HEIGHT = 300;
 const SPEECH_TIMER = 8000;
 const MENU_TIMER = 3000;
+const PC_BABBLE_ATTEMPTS = 3;
 
 const EVENT_AREA_LOADED = 'areaLoaded';
 
 var speechTimer, menuTimer;
 var pc;
 var movement, keypresses = {};
+var is_ui_disabled = false;
 
 function loadArea(areaID) {
   $.getJSON(SERVICE_URL + 'area/' + areaID, function(data) {
@@ -33,8 +35,6 @@ function loadArea(areaID) {
       runPedestrians(area);
     });
     area.setup();
-    
-    
   });
 }
 
@@ -53,6 +53,9 @@ function narrate(text) {
   $(parent).fadeIn('fast');
 }
 
+function endNarration() {
+  $('.narrationContainer').fadeOut('fast');
+}
 
 function trackMovement() {
   for (var direction in keypresses) {
@@ -97,12 +100,70 @@ function disableKeyboard() {
   $(document).off('keyup');
 }
 
+function disableUI() {
+  is_ui_disabled = true;
+  disableKeyboard();
+}
+
+function enableUI() {
+  is_ui_disabled = false;
+  assignKeyboard();
+}
+
 $(document).ready(function() {
   $.get(SERVICE_URL + 'setup', function() {
-    
     loadArea(1);
   });
 });
+
+function pedestrianShutup(div, callback) {
+  clearTimeout($(div).data('speechTimer'));
+  if ($(div).data('bubble')) {
+    $(div).data('bubble').fadeOut('fast', function() {
+      $(this).remove();
+      $(div).data('bubble', null);
+      if (callback) {
+        console.log('rem');
+        callback();
+      }
+    });
+  }
+}
+
+function positionPedestrianBubble(div) {
+  if ($(div).data('bubble')) {
+    $(div).data('bubble').css('left', $(div).offset().left-20).css('top', $(div).position().top - $(div).data('bubble').height() + 20);
+  }
+}
+
+function pedestrianTalk(div, text) {
+  var bubble = $('<div class="speechContainer"></div>');
+  $(bubble).append('<div class="speechBubble">' + text + '</div>');
+  $(div).data('bubble', bubble);
+  $(document.body).append(bubble);
+  positionPedestrianBubble(div);
+  $(bubble).fadeTo('fast', 1);
+}
+
+function generatePedestrianJeer() {
+  var text = '';
+  var random = rand(0, 3);
+  switch(random) {
+    case 0:
+      text = 'Get a fuckin job.';
+      break;
+    case 1:
+      text = 'You sicken me.';
+      break;
+    case 2:
+      text = 'Beat it, rummy.';
+      break;
+    case 3:
+      text = 'Look at this crazy sack of shit.';
+      break;
+  }
+  return text;
+}
 
 function makePedestrian(area, y, direction) {
   var div = $('<div class="pedestrian"></div>');
@@ -128,16 +189,24 @@ function makePedestrian(area, y, direction) {
   }
   $(div).css('top', y - newH);
   $(div).css('z-index', y);
+  if (pc.isBabbling) {
+    pedestrianTalk(div, generatePedestrianJeer());
+  }
   $(div).animate({
     left: destination
-  }, rand(1000, 8000), function() {
-    $(div).remove();
-  });;
+  },{
+    step: function() {
+      positionPedestrianBubble(div);
+    },
+    duration: rand(3000, 8000),
+    complete: function() {
+      pedestrianShutup(div, function() {$(div).remove();});
+    }
+  });
 }
 
 function runPedestrians(area) {
   setTimeout(function() {
-    
     makePedestrian(area, rand(area.pedestrianTrackLow, area.pedestrianTrackHigh), rand(0,1));
     runPedestrians(area);
   }, rand(500, 20000));

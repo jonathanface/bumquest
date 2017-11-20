@@ -41,7 +41,9 @@ class Item {
     $(this.img).click(function(event) {
       event.preventDefault();
       event.stopPropagation();
-      showMenu(this, event.pageX - $('main').offset().left, event.pageY - $('main').offset().top);
+      if (!isUIDisabled) {
+        showMenu(this, event.pageX - $('main').offset().left, event.pageY - $('main').offset().top);
+      }
     });
   }
 
