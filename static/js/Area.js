@@ -1,6 +1,6 @@
 class Area {
   
-  constructor (id, title, description, image, walkPath, walkType, objects, nodes) {
+  constructor (id, title, description, image, walkPath, walkType, objects, nodes, pedLow, pedHigh) {
     this.id = id;
     this.title = title;
     this.description = description;
@@ -12,6 +12,8 @@ class Area {
     this.loadBackground();
     this.lowPoint = 755;
     this.highPoint = 375;
+    this.pedestrianTrackLow = pedLow;
+    this.pedestrianTrackHigh = pedHigh;
     this.items = [];
     for (var i=0; i < objects.length; i++) {
       var obj = new Item(objects[i].oid, objects[i].title,
@@ -21,8 +23,13 @@ class Area {
       this.items.push(obj);
     }
     this.walkpathNodes = nodes;
-    this.loadWalkpath();
     
+    
+  }
+  
+  setup() {
+    this.loadWalkpath();
+    $(this).trigger(EVENT_AREA_LOADED);
   }
   
   loadObjects() {
@@ -58,7 +65,7 @@ class Area {
       ctx.drawImage(img, 0, 0, img.width, img.height);
       var coords = self.walkPath.split(',');
       ctx.fillStyle = 'rgba(0,0,0,0)';
-      ctx.fillStyle = 'pink';
+      //ctx.fillStyle = 'pink';
       var path = ctx.beginPath();
       ctx.moveTo(coords[0], coords[1]);
       for (var i=2; i < coords.length; i+=2) {

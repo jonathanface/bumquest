@@ -4,6 +4,7 @@
   width:160px;
   height:108px;
   opacity:0;
+  z-index:995;
 }
 .ui_icons {
   opacity:0.8;

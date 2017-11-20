@@ -26,6 +26,7 @@ main {
   position:relative; 
   border-top-left-radius:15px;
   border-top-right-radius:15px;
+  overflow:hidden;
 }
 
 main canvas {
@@ -53,6 +54,14 @@ div.pc {
   background-position: center bottom;
 }
 
+div.pedestrian {
+  width:91px;
+  height:300px;
+  position:absolute;
+  background-size:100% 100%;
+  background-repeat:no-repeat;
+  background-position: center bottom;
+}
 
 section.controls {
   width:1024px;
@@ -81,6 +90,24 @@ section.controls .icon {
 }
 section.controls .icon:hover {
   opacity:1;
+}
+
+.narrationContainer {
+  position:absolute;
+  display:none;
+  right:10px;
+  top:10px;
+}
+
+.narration {
+  font-family:dialog;
+	position: relative;
+  padding: 15px;
+  border: 5px solid #000;
+  color: #333;
+  background: #fff;
+  max-width:250px;
+  min-width:100px;
 }
 
 .speechContainer {
@@ -126,6 +153,7 @@ section.controls .icon:hover {
   cursor:pointer;
 }
 
+
 #player_inventory .bg, #object_inventory .bg {
   position: absolute;
   width: 90%;
@@ -136,6 +164,7 @@ section.controls .icon:hover {
   opacity: 0.9;
   border-radius: 15px;
   border: 3px solid #000;
+  z-index:997;
 }
 #player_inventory .fg, #object_inventory .fg {
   position: absolute;
@@ -144,7 +173,7 @@ section.controls .icon:hover {
   top: 5%;
   left: 5%;
   padding:20px;
-  z-index:100;
+  z-index:998;
 }
 #player_inventory .fg header, #object_inventory .fg header {
   position:relative;

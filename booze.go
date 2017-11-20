@@ -8,6 +8,7 @@ import (
   "fmt"
   _ "github.com/go-sql-driver/mysql"
   "github.com/gorilla/mux"
+  "github.com/gorilla/sessions"
   "github.com/gorilla/context"
   "github.com/jonathanface/bumquest/DBUtils"
 )
@@ -15,6 +16,7 @@ import (
 const (
   SERVICE_PATH = "/service"
   PORT = ":85"
+  BUMQUEST_SESSION_ID = "bumquest_player"
 )
 type Area struct {
   Aid int `json:"aid"`
@@ -25,6 +27,8 @@ type Area struct {
   Image string `json:"image"`
   Objects []Object `json:"objects"`
   WalkpathNodes []WalkpathNode `json:"walkpath_nodes"`
+  Pedestrian_min_y int `json:"pedestrian_min_y"`
+  Pedestrian_max_y int `json:"pedestrian_max_y"`
 }
 type LookInfo struct {
   Lid int `json:"lid"`
@@ -86,6 +90,46 @@ func writeSuccess(w http.ResponseWriter) {
   w.Write([]byte("200 - Success"))
 }
 
+var sessionStore = sessions.NewCookieStore([]byte(BUMQUEST_SESSION_ID))
+
+func setSession(w http.ResponseWriter, r *http.Request, userID int, username string, timestamp int) {
+  session, err := sessionStore.Get(r, BUMQUEST_SESSION_ID)
+  if err != nil {
+    serverError(w, err.Error())
+    return
+  }
+  session.Values["id"] = userID
+  session.Values["name"] = username
+  session.Values["timestamp"] = timestamp
+  session.Values["ip"] = r.RemoteAddr
+  session.Save(r, w)
+}
+
+func checkSession(w http.ResponseWriter, r *http.Request) {
+  session, err := sessionStore.Get(r, BUMQUEST_SESSION_ID)
+  if err != nil {
+    serverError(w, err.Error())
+    return
+  }
+  if len(session.Values) > 0 {
+    entry := make(map[string]interface{})
+    entry["uid"] = session.Values["id"];
+    entry["login_name"] = session.Values["name"]
+    entry["timestamp"] = session.Values["timestamp"]
+    entry["ip"] = session.Values["ip"]
+    jsonData, err := json.Marshal(entry)
+    if err != nil {
+      serverError(w, err.Error())
+      return
+    }
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintf(w, string(jsonData))
+  } else {
+    fileNotFound(w, "session is empty")
+    return
+  }
+}
+
 func handleArea(w http.ResponseWriter, r *http.Request) {
   log.Println("get area")
   isValid, aid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
@@ -95,7 +139,7 @@ func handleArea(w http.ResponseWriter, r *http.Request) {
   }
   var area = Area{}
   db := DBUtils.OpenDB();
-  db.QueryRow("select areaID,name,description,walkCoords,walkType,image from areas WHERE areaID = ?", aid).Scan(&area.Aid, &area.Title, &area.Description, &area.Walkpath, &area.Walktype, &area.Image)
+  db.QueryRow("select areaID,name,description,walkCoords,walkType,image,pedLow, pedHigh from areas WHERE areaID = ?", aid).Scan(&area.Aid, &area.Title, &area.Description, &area.Walkpath, &area.Walktype, &area.Image, &area.Pedestrian_min_y, &area.Pedestrian_max_y)
 
   rows, err := db.Query("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in,has_inventory,interact_x, interact_y from objects WHERE locationID = ?", aid)
   if (err != nil) {
@@ -233,23 +277,169 @@ func handleObjectInventory(w http.ResponseWriter, r *http.Request) {
       log.Fatal(err)
     }
     objects = append(objects, object)
-    DBUtils.CloseDB(db)
-    jsonData, err := json.Marshal(objects)
-    if (err != nil) {
-      serverError(w, err.Error())
-      return
-    }
-    fmt.Fprintf(w, string(jsonData))
   }
+  DBUtils.CloseDB(db)
+  jsonData, err := json.Marshal(objects)
+  if (err != nil) {
+    serverError(w, err.Error())
+    return
+  }
+  fmt.Fprintf(w, string(jsonData))
+}
+
+func handleObjectDrop(w http.ResponseWriter, r *http.Request) {
+  session, err := sessionStore.Get(r, BUMQUEST_SESSION_ID)
+  if err != nil {
+    forbidden(w, err.Error())
+    return
+  }
+  if len(session.Values) == 0 {
+    forbidden(w, "Forbidden")
+    return
+  }
+  
+  uid := session.Values["id"].(int)
+  log.Print("OK: "+mux.Vars(r)["cid"])
+
+  isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["oid"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+
+  isValid, cid := convertAndVerifyStringToInt(mux.Vars(r)["cid"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+  db := DBUtils.OpenDB();
+  stmt, err := db.Prepare("DELETE FROM player_inventory WHERE playerID = ? AND objectID = ?")
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  defer stmt.Close()
+  _, err = stmt.Exec(uid, oid)
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  stmt, err = db.Prepare("INSERT INTO object_inventory (containerID, objectID) VALUES(?,?)")
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  defer stmt.Close()
+  _, err = stmt.Exec(cid, oid)
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  DBUtils.CloseDB(db)
+  writeSuccess(w)
+}
+
+func handleObjectTake(w http.ResponseWriter, r *http.Request) {
+  session, err := sessionStore.Get(r, BUMQUEST_SESSION_ID)
+  if err != nil {
+    forbidden(w, err.Error())
+    return
+  }
+  if len(session.Values) == 0 {
+    forbidden(w, "Forbidden")
+    return
+  }
+
+  uid := session.Values["id"].(int)
+
+  isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["oid"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+  isValid, cid := convertAndVerifyStringToInt(mux.Vars(r)["cid"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+  db := DBUtils.OpenDB();
+  stmt, err := db.Prepare("INSERT INTO player_inventory (playerID, objectID) VALUES(?,?)")
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  defer stmt.Close()
+  _, err = stmt.Exec(uid, oid)
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  stmt, err = db.Prepare("DELETE FROM object_inventory WHERE containerID=? AND objectID=?")
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  defer stmt.Close()
+  _, err = stmt.Exec(cid, oid)
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  DBUtils.CloseDB(db)
+  writeSuccess(w)
+}
+
+func handlePlayerInventory(w http.ResponseWriter, r *http.Request) {
+  session, err := sessionStore.Get(r, BUMQUEST_SESSION_ID)
+  if err != nil {
+    forbidden(w, err.Error())
+    return
+  }
+  if len(session.Values) == 0 {
+    forbidden(w, "Forbidden")
+    return
+  }
+
+  uid := session.Values["id"].(int)
+  log.Println("handling player inventory request")
+  
+
+  db := DBUtils.OpenDB();
+  rows, err := db.Query("select objectID from player_inventory WHERE playerID = ?", uid)
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  
+  var objects []Object
+  for rows.Next() {
+    var currentOid int
+    rows.Scan(&currentOid)
+    objRow := db.QueryRow("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in,has_inventory,interact_x, interact_y from objects WHERE objectID = ?", currentOid)
+    object := Object{}
+    err = objRow.Scan(&object.Oid, &object.Title, &object.Image_opened, &object.Image_closed, &object.X, &object.Y, &object.Is_closed, &object.Is_locked, &object.Contained_in, &object.Has_inventory, &object.Interact_x, &object.Interact_y)
+    if err != nil {
+      log.Println("???")
+      log.Fatal(err)
+    }
+    objects = append(objects, object)
+  }
+  DBUtils.CloseDB(db)
+  jsonData, err := json.Marshal(objects)
+  if (err != nil) {
+    serverError(w, err.Error())
+    return
+  }
+  fmt.Fprintf(w, string(jsonData))
+}
+
+func setup(w http.ResponseWriter, r *http.Request) {
+  setSession(w, r, 1, "player_1", 5465465)
+  writeSuccess(w)
 }
 
 func main() {
   rtr := mux.NewRouter()
+  rtr.HandleFunc(SERVICE_PATH + "/setup", setup).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/area/{[0-9]+}", handleArea).Methods("GET")
+  rtr.HandleFunc(SERVICE_PATH + "/player/{[0-9]+}/inventory", handlePlayerInventory).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/object/{[0-9]+}/look", handleLookAction).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/object/{[0-9]+}/speak", handleSpeakAction).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/object/{[0-9]+}/touch", handleTouchAction).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/object/{[0-9]+}/inventory", handleObjectInventory).Methods("GET")
+  rtr.HandleFunc(SERVICE_PATH + "/object/{oid:[0-9]+}/take/{cid:[0-9]+}", handleObjectTake).Methods("POST")
+  rtr.HandleFunc(SERVICE_PATH + "/object/{oid:[0-9]+}/drop/{cid:[0-9]+}", handleObjectDrop).Methods("PUT")
   rtr.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
   http.Handle("/", rtr)
   

@@ -3,6 +3,7 @@ class Player {
   
   constructor (area) {
     var self = this;
+    this.id = 1;
     this.location = area;
     this.width;
     this.height;
@@ -17,11 +18,13 @@ class Player {
       self.y = area.lowPoint - self.height;
       self.initial_height = self.height;
       self.initial_width = self.width;
-      $('main').append('<div class="pc" style="top:' + self.y + ';left:' + self.x + ';"></div>');
+      $('main').append('<div class="pc" data-objid="pc" style="top:' + self.y + ';left:' + self.x + ';"></div>');
+      $('.pc').css('z-index', self.y + self.height);
+      self.addClickAction();
     }
     
     this.img_default.src = 'img/people/bum_default.png';
-    this.initial_default_img = this.img_default;
+    this.img_forward = this.img_default;
     this.current_img = this.img_default;
     
     this.img_backwards = document.createElement('img');
@@ -39,7 +42,18 @@ class Player {
     const MIN_INTERACT_DISTANCE = 100;
     this.MIN_INTERACT_DISTANCE = MIN_INTERACT_DISTANCE;
     
-     }
+  }
+  
+  addClickAction() {
+    var self = this;
+    $('.pc').click(function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      var xPos = self.x + event.offsetX - (UI_MENU_WIDTH/2);
+      var yPos = self.y + event.offsetY - (UI_MENU_HEIGHT/2);
+      showMenu(this, xPos, yPos);
+    });
+  }
 
   examine(object) {
     var self = this;
@@ -60,7 +74,12 @@ class Player {
   }
   
   touch(object) {
+
     var self = this;
+    if (object == self) {
+      pc.say("I'm not that desperate yet.");
+      return;
+    }
     var xPos = object.interaction_x, yPos = object.interaction_y;
     var destination = new Point(xPos, yPos);
     var path = this.location.walkpathNodes;
@@ -141,7 +160,7 @@ class Player {
     $(document.body).append(div);
     self.positionSpeechBubble(div);
     $(div).fadeTo('fast', 1);
-    if (this.img_default != this.img_backwards) {
+    if (this.img_default == this.img_forward) {
       this.updateImage(this.img_talk);
     }
     this.assignSpeechTimer(timer, callback);
@@ -149,6 +168,11 @@ class Player {
 
   speakTo(object) {
     var self = this;
+    if (object == self) {
+      narrate("You decide to practice your <b>drunken babble</b> for awhile...");
+      self.babble();
+      return;
+    }
     if (object.speak_description) {
       this.say(object.speak_description);
     } else {
@@ -157,6 +181,11 @@ class Player {
         self.say(data.description);
       });
     }
+  }
+  
+  babble() {
+    disableKeyboard();
+    this.say("BLAH BLAH THE GOVERNMENT SHIT COCK NUMBERS AWAIT ME!!");
   }
   
   walkTo(destination, callback) {
@@ -190,71 +219,104 @@ class Player {
   
   walk(direction) {
     var self = this;
-    console.log(self.x);
+    removeAllUIMenus();
+    var ctx = $('main > canvas')[0].getContext('2d');
+    //console.log(self.height);
     switch(direction) {
       case 'left':
-        self.img_default = self.initial_default_img;
-        if (self.currentImg != self.img_walkleft) {
-          self.updateImage(self.img_walkleft);
+        if (ctx.isPointInPath(self.x-5 + self.width/2, self.y + self.height)) {
+          self.img_default = self.img_walkleft;
+          if (self.currentImg != self.img_walkleft) {
+            self.updateImage(self.img_walkleft);
+          }
+          self.x -= 5;
+          $('.pc').stop().animate({
+            left: "-=5"
+          }, 0, function() {
+            
+          });
+        } else {
+          self.img_default = self.img_forward;
+          self.halt();
+          self.say(expletive(), 500);
         }
-        self.x -= 5;
-        $('.pc').stop().animate({
-          left: "-=5"
-        }, 0, function() {
-          
-        });
         break;
       case 'right':
-        self.img_default = self.initial_default_img;
-        if (self.currentImg != self.img_walkright) {
-          self.updateImage(self.img_walkright);
+        if (ctx.isPointInPath(self.x + 6 + self.width/2, self.y + self.height)) {
+          self.img_default = self.img_walkright;
+          if (self.currentImg != self.img_walkright) {
+            self.updateImage(self.img_walkright);
+          }
+          self.x += 5;
+          $('.pc').stop().animate({
+            left: "+=5"
+          }, 0, function() {
+            
+          });
+        } else {
+          self.img_default = self.img_forward;
+          self.halt();
+          self.say(expletive(), 500);
         }
-        self.x += 5;
-        $('.pc').stop().animate({
-          left: "+=5"
-        }, 0, function() {
-          
-        });
         break;
         case 'up':
-        self.img_default = self.img_backwards;
-        if (self.currentImg != self.img_walkup) {
-          self.updateImage(self.img_walkup);
-        }
         var yRange = self.location.lowPoint - self.location.highPoint;
         var distanceTraveled = self.location.lowPoint - (self.y + self.height);
-        var percTraveled = (distanceTraveled/yRange);
-        self.height = self.initial_height - (self.height * percTraveled);
-        var heightPercDiff = self.height / self.initial_height;
-        self.width = self.initial_width * heightPercDiff;
-        self.y -= 5;
-        $('.pc').stop().animate({
-          top: "-=5",
-          height: self.height,
-          width: self.width
-        }, 0, function() {
+        var percTraveled = (distanceTraveled/yRange).toFixed(2);
+        var tempH = self.initial_height - (self.height * percTraveled);
+        var heightPercDiff = tempH / self.initial_height;
+        var tempW = self.initial_width * heightPercDiff;
+        if (ctx.isPointInPath(self.x, self.y + tempH - 6) && ctx.isPointInPath(self.x+tempW, self.y + tempH - 6)) {
+          self.img_default = self.img_backwards;
+          if (self.currentImg != self.img_walkup) {
+            self.updateImage(self.img_walkup);
+          }
+          
+          self.height = tempH;
+          self.width = tempW;
+          self.y -= 5;
+          $('.pc').css('z-index', self.y);
+          $('.pc').stop().animate({
+            top: "-=5",
+            height: self.height,
+            width: self.width
+          }, 0, function() {
 
-        });
+          });
+        } else {
+          self.img_default = self.img_backwards;
+          self.halt();
+          self.say(expletive(), 500);
+        }
         break;
       case 'down':
-        self.img_default = self.initial_default_img;
-        if (self.currentImg != self.img_walkdown) {
-          self.updateImage(self.img_walkdown);
-        }
         var yRange = self.location.lowPoint - self.location.highPoint;
         var feetY = self.location.lowPoint - (self.y + self.height);
-        var percTraveled = (feetY/yRange);
-        self.height = self.initial_height - (self.height * percTraveled);
-        var heightPercDiff = self.height / self.initial_height;
-        self.width = self.initial_width * heightPercDiff;
-        self.y += 5;
-        $('.pc').stop().animate({
-          top: "+=5",
-          height: self.height,
-          width: self.width
-        }, 0, function() {
+        var percTraveled = (feetY/yRange).toFixed(2);
+        var tempH = self.initial_height - (self.height * percTraveled);
+        var heightPercDiff = tempH / self.initial_height;
+        var tempW = self.initial_width * heightPercDiff;
+        if (ctx.isPointInPath(self.x, self.y + tempH + 6) && ctx.isPointInPath(self.x+tempW, self.y + tempH + 6)) {
+          self.img_default = self.img_forward;
+          if (self.currentImg != self.img_walkdown) {
+            self.updateImage(self.img_walkdown);
+          }
+          self.height = tempH;
+          self.width = tempW;
+          self.y += 5;
+          $('.pc').css('z-index', self.y);
+          $('.pc').stop().animate({
+            top: "+=5",
+            height: self.height,
+            width: self.width
+          }, 0, function() {
 
-        });
+          });
+        } else {
+          self.img_default = self.img_forward;
+          self.halt();
+          self.say(expletive(), 500);
+        }
         break;
     }
     
@@ -270,8 +332,6 @@ class Player {
       scale = 1;
     }
     this.currentImg = imgObj;
-    //this.width = imgObj.width * scale;
-    //this.height = imgObj.height * scale;
     $('.pc').css('background-image', 'url(' + imgObj.src + ')');
   }
   

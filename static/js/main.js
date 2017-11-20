@@ -1,3 +1,5 @@
+const UI_MENU_WIDTH = 160;
+const UI_MENU_HEIGHT = 108;
 
 const TEMPLATE_URL = 'templates/';
 const SERVICE_URL = 'service/';
@@ -14,11 +16,26 @@ var movement, keypresses = {};
 
 function loadArea(areaID) {
   $.getJSON(SERVICE_URL + 'area/' + areaID, function(data) {
-    var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, data.objects, data.walkpath_nodes);
-    pc = new Player(area);
-    assignKeyboard();
-    movement = setInterval(trackMovement, 20);
-    $(window).trigger(EVENT_AREA_LOADED);
+    console.log(data);
+    var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, data.objects, data.walkpath_nodes, data.pedestrian_min_y, data.pedestrian_max_y);
+    $(area).on(EVENT_AREA_LOADED, function() {
+      $('.controls').find('.icon:eq(0)').click(function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (pc.inventory_open) {
+          pc.closeInventory();
+        } else {
+          pc.openInventory();
+        }
+      });
+      pc = new Player(area);
+      assignKeyboard();
+      movement = setInterval(trackMovement, 20);
+      runPedestrians(area);
+    });
+    area.setup();
+    
+    
   });
 }
 
@@ -28,6 +45,14 @@ function expletive() {
   return expletives[rand(0, expletives.length-1)];
 }
 
+function narrate(text) {
+  var parent = $('<div class="narrationContainer"></div>');
+  var child = $('<div class="narration"></div>');
+  $(child).append(text);
+  $(parent).append(child);
+  $('main').append(parent);
+  $(parent).fadeIn('fast');
+}
 
 
 function trackMovement() {
@@ -36,35 +61,16 @@ function trackMovement() {
     var ctx = $('main > canvas')[0].getContext('2d');
     switch(parseInt(direction)) {
       case 37://left
-        console.log(pc.x);
-        if (ctx.isPointInPath(pc.x-5, pc.y + pc.height)) {
-          pc.walk('left');
-        } else {
-          pc.say(expletive(), 500);
-        }
+        pc.walk('left');
         break;
       case 39://right
-        if (ctx.isPointInPath(pc.x+5+pc.width, pc.y + pc.height)) {
-          pc.walk('right');
-        } else {
-          pc.say(expletive(), 500);
-        }
+        pc.walk('right');
         break;
       case 38://up
-        if (ctx.isPointInPath(pc.x+pc.width/2, Math.abs(pc.y + pc.height - 6))) {
-          pc.walk('up');
-        } else {
-          $('.pc').stop();
-          pc.say(expletive(), 500);
-        }
+        pc.walk('up');
         break;
       case 40://down
-        if (ctx.isPointInPath(pc.x+pc.width/2, pc.y + pc.height + 6)) {
-          pc.walk('down');
-        } else {
-          $('.pc').stop();
-          pc.say(expletive(), 500);
-        }
+        pc.walk('down');
         break;
     }
   }
@@ -78,12 +84,12 @@ function assignKeyboard() {
   $(document).off('keyup').keyup(function(event) {
     event.preventDefault();
     delete keypresses[event.which];
-    console.log('key: ' + event.which);
     if (event.which == 38) {
-      pc.halt('up');
+      pc.img_default = pc.img_backwards;
     } else {
-      pc.halt();
+      pc.img_default = pc.img_forward;
     }
+    pc.halt();
   });
 }
 
@@ -93,23 +99,50 @@ function disableKeyboard() {
 }
 
 $(document).ready(function() {
-  $(window).on(EVENT_AREA_LOADED, function() {
-    $('.controls').find('.icon:eq(0)').click(function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      if (pc.inventory_open) {
-        pc.closeInventory();
-      } else {
-        pc.openInventory();
-      }
-    });
+  $.get(SERVICE_URL + 'setup', function() {
+    
+    loadArea(1);
   });
-  loadArea(1);
 });
 
+function makePedestrian(area, y, direction) {
+  var div = $('<div class="pedestrian"></div>');
+  $(div).css('background-image', 'url(img/animations/pedestrian_left_1.gif)');
+  if (direction) {
+    $(div).css('background-image', 'url(img/animations/pedestrian_right_1.gif)');
+  }
+  $('main').append(div);
+  var yRange = area.lowPoint - area.highPoint;
+  var feetY = area.lowPoint - y;
+  var percTraveled = (feetY/yRange).toFixed(2);
+  var newH = $(div).height() - ($(div).height() * percTraveled);
+  var heightPercDiff = newH / $(div).height();
+  var newW = $(div).width() * heightPercDiff;
+  $(div).css('height', newH);
+  $(div).css('width', newW);
+  var destination;
+  $(div).css('left', 0 - $(div).width());
+  destination = $('main').width();
+  if (direction) {
+    $(div).css('left', $('main').width() + $(div).width());
+    destination = 0 - $(div).width();
+  }
+  $(div).css('top', y - newH);
+  $(div).css('z-index', y);
+  $(div).animate({
+    left: destination
+  }, rand(1000, 8000), function() {
+    $(div).remove();
+  });;
+}
 
-
-
+function runPedestrians(area) {
+  setTimeout(function() {
+    
+    makePedestrian(area, rand(area.pedestrianTrackLow, area.pedestrianTrackHigh), rand(0,1));
+    runPedestrians(area);
+  }, rand(500, 20000));
+}
 
 
 function assignMenuTimer(menu) {
@@ -154,9 +187,11 @@ function removeAllUIMenus() {
 function interact(action, objectID) {
   removeAllSpeech();
   var item = $.grep(pc.location.items, function(e){ return e.id == objectID; })[0];
-  if (isNaN(parseInt(objectID))) {
-    return;
+  console.log('obj: ' + objectID);
+  if (objectID == 'pc') {
+    item = pc;
   }
+  console.log(item);
   switch(action) {
     case 'look':
       pc.examine(item);
@@ -187,7 +222,7 @@ function showMenu(object, xPos, yPos) {
       });
     });
     $(template).fadeTo('fast', 1, function() {
-      //assignMenuTimer(template);
+      assignMenuTimer(template);
     });
   });
 }

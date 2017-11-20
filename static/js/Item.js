@@ -60,46 +60,41 @@ class Item {
   openInventory() {
     var self = this;
     this.inventory_open = true;
-    $.get(TEMPLATE_URL + 'item_inventory.html', function(template) {
-      template = $(template);
-      var img = $('<img src="' + self.OBJ_URL + self.image_opened + '">');
-      $(template).find('.objContents > figure').append(img);
-      $(template).find('.objContents > figure').append('<figcaption>' + ucwords(self.title) + '</figcaption>');
-      $(template).find('header > i').click(function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        self.closeInventory();
-      });
-      $('main').append(template);
-      $('.playerInventory td').each(function(index, item) {
-        $(item).droppable({
-          drop: function(event, ui) {
-            var cloned = $(ui.draggable).clone();
-            $(this).append(cloned);
-            $(cloned).draggable({
-              containment: '#object_inventory .fg > div',
-              helper: 'clone',
-              appendTo: '#object_inventory .fg > div',
-              start: function(event, ui) {
-                $(this).remove();
-              }
-            });
-          }
+    $.getJSON(SERVICE_URL + 'player/' + pc.id + '/inventory', function(inventory) {
+      $.get(TEMPLATE_URL + 'item_inventory.html', function(template) {
+        template = $(template);
+        var img = $('<img src="' + self.OBJ_URL + self.image_opened + '">');
+        $(template).find('.objContents > figure').append(img);
+        $(template).find('.objContents > figure').append('<figcaption>' + ucwords(self.title) + '</figcaption>');
+        $(template).find('header > i').click(function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          self.closeInventory();
         });
-        $(item).children('div').draggable({
-          containment: '#object_inventory .fg > div',
-          helper: 'clone',
-          appendTo: '#object_inventory .fg > div',
-          start: function(event, ui) {
-            $(this).remove();
-          }
-        });
-      });
-      $.getJSON(SERVICE_URL + 'object/' + self.id + '/inventory', function(data) {
-        $(data).each(function(index, item) {
+        $('main').append(template);
+        $(inventory).each(function(index, item) {
           var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image_closed + '" alt="' + item.title + '" title="' + item.title + '"></div>');
-          $($('.objectItems').find('td')[index]).html(div);
-          $(div).draggable({
+          $($('.playerInventory').find('td')[index]).html(div);
+        });
+        $('.playerInventory td').each(function(index, item) {
+          $(item).droppable({
+            drop: function(event, ui) {
+              var cloned = $(ui.draggable).clone();
+              $(this).append(cloned);
+              $(cloned).draggable({
+                containment: '#object_inventory .fg > div',
+                helper: 'clone',
+                appendTo: '#object_inventory .fg > div',
+                start: function(event, ui) {
+                  $(this).remove();
+                }
+              });
+              $.post(SERVICE_URL + 'object/' + cloned.attr('data-objid') + '/take/' + self.id, function(data) {
+                console.log(data);
+              });
+            }
+          });
+          $(item).children('div').draggable({
             containment: '#object_inventory .fg > div',
             helper: 'clone',
             appendTo: '#object_inventory .fg > div',
@@ -108,11 +103,11 @@ class Item {
             }
           });
         });
-        $('.objectItems').find('td').droppable({
-          drop: function(event, ui) {
-            var cloned = $(ui.draggable).clone();
-            $(this).append(cloned);
-            $(cloned).draggable({
+        $.getJSON(SERVICE_URL + 'object/' + self.id + '/inventory', function(data) {
+          $(data).each(function(index, item) {
+            var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image_closed + '" alt="' + item.title + '" title="' + item.title + '"></div>');
+            $($('.objectItems').find('td')[index]).html(div);
+            $(div).draggable({
               containment: '#object_inventory .fg > div',
               helper: 'clone',
               appendTo: '#object_inventory .fg > div',
@@ -120,7 +115,28 @@ class Item {
                 $(this).remove();
               }
             });
-          }
+          });
+          $('.objectItems').find('td').droppable({
+            drop: function(event, ui) {
+              var cloned = $(ui.draggable).clone();
+              $(this).append(cloned);
+              $(cloned).draggable({
+                containment: '#object_inventory .fg > div',
+                helper: 'clone',
+                appendTo: '#object_inventory .fg > div',
+                start: function(event, ui) {
+                  $(this).remove();
+                }
+              });
+              $.ajax({
+                url: SERVICE_URL + 'object/' + cloned.attr('data-objid') + '/drop/' + self.id,
+                type: 'PUT',
+                success: function(result) {
+                    // Do something with the result
+                }
+              });
+            }
+          });
         });
       });
     });
