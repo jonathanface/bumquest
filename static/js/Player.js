@@ -76,16 +76,20 @@ class Player {
       pc.say('I\'m the handsomest bum in town.');
       return;
     }
-    if (object.description) {
+    if (object.lookID == 0) {
+      this.say('Nothing really remarkable about it.');
+      return;
+    }
+    if (object.lookText) {
       this.updateImage(this.img_talk);
-      this.say(object.description);
+      this.say(object.lookText);
     } else {
       $.getJSON(SERVICE_URL + 'item/' + object.id + '/look', function(data) {
         var description = data.description;
-        if (data.is_closed == 1) {
+        if (object.is_closed == 1) {
           description += '<br>It\'s closed.';
         }
-        object.description = description;
+        object.lookText = description;
         self.updateImage(self.img_talk);
         self.say(description);
       });
@@ -98,8 +102,9 @@ class Player {
       pc.say('Take myself? Where?');
       return;
     }
-    if (!object.is_takeable) {
-      pc.say('I can\'t.');
+    if (!object.takeID) {
+      this.say('I can\'t.');
+      return;
     }
   }
   
@@ -109,8 +114,29 @@ class Player {
       pc.say("I guess I <i>could</i> use a shower, now that you mention it.");
       return;
     }
-    if (!object.is_smellable) {
+    if (!object.smellID) {
       pc.say('It smells about as good as you\'d expect.');
+      return;
+    }
+    if (needsToMove(self, object)) {
+      var nearestPoint = getNearestCoordinates(self.location.walkpathNodes, new Point(object.interaction_x, object.interaction_y));
+      clearTimeout(speechTimer);
+      self.say('Well... okay...', 2000);
+      self.walkTo(nearestPoint, function() {
+        self.smell(object)
+      });
+      return;
+    }
+    if (object.smellText) {
+      this.updateImage(this.img_talk);
+      this.say(object.smellText);
+    } else {
+      $.getJSON(SERVICE_URL + 'item/' + object.id + '/smell', function(data) {
+        var description = data.description;
+        object.smellText = description;
+        self.updateImage(self.img_talk);
+        self.say(description);
+      });
     }
   }
   
@@ -120,25 +146,45 @@ class Player {
       pc.say("I taste like vomit and cheap wine. Thanks for making me do that.");
       return;
     }
-    if (!object.is_tasteable) {
+    if (!object.tasteID) {
       pc.say('Yeah, no.');
+      return;
+    }
+    if (needsToMove(self, object)) {
+      var nearestPoint = getNearestCoordinates(self.location.walkpathNodes, new Point(object.interaction_x, object.interaction_y));
+      clearTimeout(speechTimer);
+      self.say('Well... okay...', 2000);
+      self.walkTo(nearestPoint, function() {
+        self.taste(object)
+      });
+      return;
+    }
+    if (object.tasteText) {
+      this.updateImage(this.img_talk);
+      this.say(object.tasteText);
+    } else {
+      $.getJSON(SERVICE_URL + 'item/' + object.id + '/taste', function(data) {
+        var description = data.description;
+        object.tasteText = description;
+        self.updateImage(self.img_talk);
+        self.say(description);
+      });
     }
   }
   
   touch(object) {
     var self = this;
     if (object == self) {
-      pc.say("I'm not that desperate yet.");
+      self.say("I'm not that desperate yet.");
       return;
     }
-    var xPos = object.interaction_x, yPos = object.interaction_y;
-    var destination = new Point(xPos, yPos);
-    var path = this.location.walkpathNodes;
-    var endPoint = getNearestCoordinates(path, destination);
-    if (self.pathLocation.x != endPoint.x || self.pathLocation.y != endPoint.y) {
-      self.say('Alright, hold on', 2000);
-      self.walkTo(endPoint, function() {
-        self.touch(object)
+
+    if (needsToMove(self, object)) {
+      var nearestPoint = getNearestCoordinates(self.location.walkpathNodes, new Point(object.interaction_x, object.interaction_y));
+      clearTimeout(speechTimer);
+      self.say('Well... okay...', 2000);
+      self.walkTo(nearestPoint, function() {
+        self.touch(object);
       });
       return;
     }
@@ -151,8 +197,21 @@ class Player {
       self.say('Fine, it\'s open now.', 2000);
       return; 
     }
-    if (object.has_inventory) {
-      object.openInventory();
+
+    if (!object.touchID) {
+      pc.say('I\'m not touching that.');
+      return;
+    }
+    if (object.touchText) {
+      this.updateImage(this.img_talk);
+      this.say(object.touchText);
+    } else {
+      $.getJSON(SERVICE_URL + 'item/' + object.id + '/taste', function(data) {
+        var description = data.description;
+        object.touchText = description;
+        self.updateImage(self.img_talk);
+        self.say(description);
+      });
     }
   }
   
@@ -178,7 +237,7 @@ class Player {
   say(text, timer, callback) {
     var self = this;
     if ($('.pcTalk').length) {
-      this.shutup(function() {self.say(text, timer, callback)});
+      this.shutup(function() {pc.say(text, timer, callback)});
       return;
     }
     var div = $('<div class="speechContainer pcTalk"></div>');
@@ -199,11 +258,15 @@ class Player {
       self.babble();
       return;
     }
-    if (object.speak_description) {
-      this.say(object.speak_description);
+    if (!object.speakID) {
+      this.say('I doubt it will answer.');
+      return;
+    }
+    if (object.speakText) {
+      this.say(object.speakText);
     } else {
       $.getJSON(SERVICE_URL + 'item/' + object.id + '/speak', function(data) {
-        object.speak_description = data.description;
+        object.speakText = data.description;
         self.say(data.description);
       });
     }
@@ -252,6 +315,7 @@ class Player {
   
   shutup(callback) {
     clearTimeout(speechTimer);
+
     this.updateImage(this.img_default);
     $('.pcTalk').fadeOut('fast', function() {
       $(this).remove();

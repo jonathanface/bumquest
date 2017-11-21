@@ -21,51 +21,21 @@ type Item struct {
   Is_takeable int `json:"is_takeable"`
 }
 
-type LookInfo struct {
-  Lid int `json:"lid"`
+type Info struct {
+  Id int `json:"id"`
   Description string `json:"description"`
   Has_inventory int `json:"has_inventory"`
   Is_closed int `json:"is_closed"`
-}
-
-type TouchInfo struct {
-  Tid int `json:"tid"`
-  Has_inventory int `json:"has_inventory"`
-  Is_closed int `json:"is_closed"`
-  Is_locked int `json:"is_locked"`
   Contained_in int `json:"contained_in"`
+  Is_locked int `json:"is_locked"`
 }
 
-type SpeakInfo struct {
-  Sid int `json:"sid"`
-  Description string `json:"description"`
-}
-
-func SpeakAt(oid int) SpeakInfo {
-  var info = SpeakInfo{}
+func GetObjectExamineResults(table string, id int) Info {
+  var info = Info{}
+  info.Id = id
   db := DBUtils.OpenDB()
-  sid := 0
-  db.QueryRow("SELECT speakID FROM objects WHERE objectID = ?", oid).Scan(&sid)
-  db.QueryRow("select speakID, text from speak_results WHERE speakID = ?", sid).Scan(&info.Sid, &info.Description)
-  DBUtils.CloseDB(db)
-  return info
-}
-
-func LookAt(oid int) LookInfo {
-  var info = LookInfo{}
-  db := DBUtils.OpenDB()
-  lid := 0
-  db.QueryRow("SELECT lookID FROM objects WHERE objectID = ?", oid).Scan(&lid)
-  db.QueryRow("select lookID, text from look_results WHERE lookID = ?", lid).Scan(&info.Lid, &info.Description)
-  db.QueryRow("select has_inventory,is_closed from objects WHERE objectID = ?", oid).Scan(&info.Has_inventory, &info.Is_closed)
-  DBUtils.CloseDB(db)
-  return info
-}
-
-func Touch(oid int) TouchInfo {
-  var info = TouchInfo{}
-  db := DBUtils.OpenDB();
-  db.QueryRow("select has_inventory,is_closed,contained_in,is_locked from objects WHERE objectID = ?", oid).Scan(&info.Has_inventory, &info.Is_closed, &info.Contained_in, &info.Is_locked)
+  db.QueryRow("select text from " + table + " WHERE objectID = ?", id).Scan(&info.Description)
+  db.QueryRow("select has_inventory,is_closed,contained_in,is_locked from objects WHERE objectID = ?", id).Scan(&info.Has_inventory, &info.Is_closed, &info.Contained_in, &info.Is_locked)
   DBUtils.CloseDB(db)
   return info
 }

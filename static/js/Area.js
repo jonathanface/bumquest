@@ -19,9 +19,9 @@ class Area {
       var obj = new Item(objects[i].oid, objects[i].title,
                          this.id, objects[i].image_opened, objects[i].image_closed, objects[i].x,
                          objects[i].y, objects[i].interaction_x, objects[i].interaction_y,
-                         objects[i].takeable, objects[i].smellable, objects[i].tasteable,
-                         objects[i].is_closed, objects[i].has_inventory, objects[i].is_locked,
-                         objects[i].contained_in);
+                         objects[i].is_closed, objects[i].has_inventory, objects[i].is_locked, objects[i].contained_in,
+                         objects[i].look_id, objects[i].smell_id, objects[i].taste_id, objects[i].take_id, objects[i].touch_id,
+                         objects[i].speak_id);
       this.items.push(obj);
     }
     this.walkpathNodes = nodes;

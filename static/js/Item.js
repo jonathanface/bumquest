@@ -1,7 +1,8 @@
 class Item {
-  
+
   constructor (id, title, location, image_opened, image_closed, x, y, interact_x, interact_y,
-      takeable, smellable, tasteable, is_closed, has_inventory, is_locked, contained_in) {
+               is_closed, has_inventory, is_locked, contained_in,
+               lookID, smellID, tasteID, takeID, touchID, speakID) {
     var self = this;
     
     const OBJ_URL = 'img/objects/';
@@ -10,7 +11,6 @@ class Item {
     this.id = id;
     this.title = title;
     this.location = location;
-    this.description;
     this.height;
     this.width;
     this.x = x;
@@ -24,11 +24,21 @@ class Item {
     this.has_inventory = has_inventory;
     this.is_locked = is_locked;
     this.contained_in = contained_in;
-    this.is_takeable = takeable;
-    this.is_smellable = smellable;
-    this.is_tasteable = tasteable;
-    this.speak_description;
     this.inventory_open = false;
+    
+    this.lookID = lookID;
+    this.smellID = smellID;
+    this.tasteID = tasteID;
+    this.takeID = takeID;
+    this.touchID = touchID;
+    this.speakID = speakID;
+    
+    this.lookText;
+    this.smellText;
+    this.tasteText;
+    this.takeText;
+    this.touchText;
+    this.speakText;
 
     if (this.is_closed == 1) {
       var imgURL = OBJ_URL + this.image_closed;

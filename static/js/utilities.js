@@ -39,7 +39,7 @@ function randomPronoun() {
 }
 
 function randomNoun() {
-  switch(rand(0,15)) {
+  switch(rand(0,17)) {
     case 0:
       text = 'toaster';
       break;
@@ -88,6 +88,12 @@ function randomNoun() {
     case 15:
       text = 'trials';
       break;
+    case 16:
+      text = 'fire';
+      break;
+    case 17:
+      text = 'snowflake';
+      break;
   }
   return text;
 }
@@ -134,9 +140,56 @@ function randomSaying() {
   return text;
 }
 
+function randomAdjective() {
+  switch(rand(0,5)) {
+    case 0:
+      text = 'waning';
+      break;
+    case 1:
+      text = 'gilded';
+      break;
+    case 2:
+      text = 'ancient';
+      break;
+    case 3:
+      text = 'shitty';
+      break;
+    case 4:
+      text = 'young';
+      break;
+    case 5:
+      text = 'terrible';
+      break;
+  }
+  return text;
+}
+
+function randomCurse() {
+  switch(rand(0,5)) {
+    case 0:
+      text = 'fuck';
+      break;
+    case 1:
+      text = 'ass';
+      break;
+    case 2:
+      text = 'cunt';
+      break;
+    case 3:
+      text = 'motherfucker';
+      break;
+    case 4:
+      text = 'penis';
+      break;
+    case 5:
+      text = 'cock-gobbler';
+      break;
+  }
+  return text;
+}
+
 function generateDrunkenBabble() {
-  var saying = randomSaying();
-  return randomPronoun() + ' ' + randomDemand() + ' the <b>' + randomNoun() + '!</b> ' + saying + '! <b><i>' + saying + '!!</i></b>';
+  return randomPronoun() + ' ' + randomDemand() + ' the <b>' + randomAdjective() + ' ' + randomNoun() + '!</b> ' + ucwords(randomSaying()) + '! <b>' + ucwords(randomSaying()) + '!! ' + randomCurse() + '! <i>' + randomCurse() + '!!</i></b>';
 }
 
 function Point(x, y, id) {
@@ -215,4 +268,16 @@ function generatePedestrianSympathy() {
       break;
   }
   return text;
+}
+
+function needsToMove(pc, object) {
+  var xPos = object.interaction_x, yPos = object.interaction_y;
+  var destination = new Point(xPos, yPos);
+  var path = pc.location.walkpathNodes;
+  var endPoint = getNearestCoordinates(path, destination);
+  if (pc.pathLocation.x != endPoint.x || pc.pathLocation.y != endPoint.y) {
+    return true
+  } else {
+    return false;
+  }
 }

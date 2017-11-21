@@ -113,13 +113,12 @@ func handleArea(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleSpeakAction(w http.ResponseWriter, r *http.Request) {
-  log.Println("handle speak");
   isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
   if (!isValid) {
     badRequest(w, "Bad Request")
     return
   }
-  jsonData, err := json.Marshal(Player.SpeakAt(oid))
+  jsonData, err := json.Marshal(Player.GetObjectExamineResults("speak_results", oid))
   if (err != nil) {
     serverError(w, err.Error())
     return
@@ -128,13 +127,40 @@ func handleSpeakAction(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLookAction(w http.ResponseWriter, r *http.Request) {
-  log.Println("get object info")
   isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
   if (!isValid) {
     badRequest(w, "Bad Request")
     return
   }
-  jsonData, err := json.Marshal(Player.LookAt(oid))
+  jsonData, err := json.Marshal(Player.GetObjectExamineResults("look_results", oid))
+  if (err != nil) {
+    serverError(w, err.Error())
+    return
+  }
+  fmt.Fprintf(w, string(jsonData))
+}
+
+func handleSmellAction(w http.ResponseWriter, r *http.Request) {
+  isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+  jsonData, err := json.Marshal(Player.GetObjectExamineResults("smell_results", oid))
+  if (err != nil) {
+    serverError(w, err.Error())
+    return
+  }
+  fmt.Fprintf(w, string(jsonData))
+}
+
+func handleTasteAction(w http.ResponseWriter, r *http.Request) {
+  isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+  jsonData, err := json.Marshal(Player.GetObjectExamineResults("taste_results", oid))
   if (err != nil) {
     serverError(w, err.Error())
     return
@@ -148,7 +174,7 @@ func handleTouchAction(w http.ResponseWriter, r *http.Request) {
     badRequest(w, "Bad Request")
     return
   }
-  jsonData, err := json.Marshal(Player.Touch(oid))
+  jsonData, err := json.Marshal(Player.GetObjectExamineResults("touch_results", oid))
   if (err != nil) {
     serverError(w, err.Error())
     return
@@ -322,6 +348,8 @@ func main() {
   rtr.HandleFunc(SERVICE_PATH + "/area/{[0-9]+}", handleArea).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/player/{[0-9]+}/inventory", handlePlayerInventory).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/look", handleLookAction).Methods("GET")
+  rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/smell", handleSmellAction).Methods("GET")
+  rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/taste", handleTasteAction).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/speak", handleSpeakAction).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/touch", handleTouchAction).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/inventory", handleItemInventory).Methods("GET")
