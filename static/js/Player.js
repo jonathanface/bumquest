@@ -54,14 +54,28 @@ class Player {
     $('.pc').click(function(event) {
       event.preventDefault();
       event.stopPropagation();
-      var xPos = self.x + event.offsetX - (UI_MENU_WIDTH/2);
-      var yPos = self.y + event.offsetY - (UI_MENU_HEIGHT/2);
-      showMenu(this, xPos, yPos);
+      if (!is_ui_disabled) {
+        var xPos = self.x + event.offsetX - (UI_MENU_WIDTH/2);
+        var yPos = self.y + event.offsetY - (UI_MENU_HEIGHT/2);
+        showMenu(this, xPos, yPos);
+      }
     });
+  }
+  
+  updateImage(imgObj, scale) {
+    if (!scale) {
+      scale = 1;
+    }
+    this.currentImg = imgObj;
+    $('.pc').css('background-image', 'url(' + imgObj.src + ')');
   }
 
   examine(object) {
     var self = this;
+    if (object == self) {
+      pc.say('I\'m the handsomest bum in town.');
+      return;
+    }
     if (object.description) {
       this.updateImage(this.img_talk);
       this.say(object.description);
@@ -78,8 +92,40 @@ class Player {
     }
   }
   
+  take (object) {
+    var self = this;
+    if (object == self) {
+      pc.say('Take myself? Where?');
+      return;
+    }
+    if (!object.is_takeable) {
+      pc.say('I can\'t.');
+    }
+  }
+  
+  smell (object) {
+    var self = this;
+    if (object == self) {
+      pc.say("I guess I <i>could</i> use a shower, now that you mention it.");
+      return;
+    }
+    if (!object.is_smellable) {
+      pc.say('It smells about as good as you\'d expect.');
+    }
+  }
+  
+  taste (object) {
+    var self = this;
+    if (object == self) {
+      pc.say("I taste like vomit and cheap wine. Thanks for making me do that.");
+      return;
+    }
+    if (!object.is_tasteable) {
+      pc.say('Yeah, no.');
+    }
+  }
+  
   touch(object) {
-
     var self = this;
     if (object == self) {
       pc.say("I'm not that desperate yet.");
@@ -128,31 +174,6 @@ class Player {
     $('#player_inventory').remove();
     this.inventory_open = false;
   }
-
-  assignSpeechTimer(timer, callback) {
-    if (!timer) {
-      timer = SPEECH_TIMER;
-    }
-    var self = this;
-    speechTimer = setTimeout(function() {
-      self.shutup(callback);
-    }, timer);
-  }
-  
-  shutup(callback) {
-    clearTimeout(speechTimer);
-    this.updateImage(this.img_default);
-    $('.pcTalk').fadeOut('fast', function() {
-      $(this).remove();
-      if (callback) {
-        callback();
-      }
-    });
-  }
-  
-  positionSpeechBubble(div) {
-    $(div).css('left', $('.pc').offset().left-20).css('top', $('.pc').position().top - $(div).height() + 20);
-  }
   
   say(text, timer, callback) {
     var self = this;
@@ -174,7 +195,7 @@ class Player {
   speakTo(object) {
     var self = this;
     if (object == self) {
-      narrate("You decide to practice your <b>drunken babble</b> for awhile...");
+      narrate('You decide to practice your <b>drunken babble</b> for awhile...&nbsp;<img class="standby" src="img/hourglass.gif" title="wait..." alt="wait...">');
       self.babble();
       return;
     }
@@ -219,33 +240,29 @@ class Player {
     }
   }
   
-  walkTo(destination, callback) {
+  assignSpeechTimer(timer, callback) {
+    if (!timer) {
+      timer = SPEECH_TIMER;
+    }
     var self = this;
-    removeAllUIMenus();
-    var points = [];
-    var g = new Graph();
-    for (var i=0; i < this.location.walkpathNodes.length; i++) {
-      points.push(new Point(this.location.walkpathNodes[i].x, this.location.walkpathNodes[i].y, (this.location.walkpathNodes[i].vid).toString()));
-      var vertexes = this.location.walkpathNodes[i].connects_with.split(',');
-      var vertex = {};
-      for (var s=0; s < vertexes.length; s++) {
-        var nextPoint = $.grep(this.location.walkpathNodes, function(e){ return (e.vid).toString() == (vertexes[s]).toString(); })[0];
-        vertex[nextPoint.vid] = getPointDistance(points[i], nextPoint);
+    speechTimer = setTimeout(function() {
+      self.shutup(callback);
+    }, timer);
+  }
+  
+  shutup(callback) {
+    clearTimeout(speechTimer);
+    this.updateImage(this.img_default);
+    $('.pcTalk').fadeOut('fast', function() {
+      $(this).remove();
+      if (callback) {
+        callback();
       }
-      g.addVertex((this.location.walkpathNodes[i].vid).toString(), vertex);
-    }
-    var destination = new Point(destination.x, destination.y);
-    var endPoint = getNearestCoordinates(points, destination);
-    var startPoint = getNearestCoordinates(points, self.pathLocation);
-    var route = g.shortestPath(startPoint.id, endPoint.id).reverse();
-    var path = [];
-    for (var i=0; i < route.length; i++) {
-      path.push($.grep(points, function(e){ return e.id == route[i]; }));
-    }
-    if (path.length) {
-      disableKeyboard();
-      this.animateWalk(path, 0, callback);
-    }
+    });
+  }
+  
+  positionSpeechBubble(div) {
+    $(div).css('left', $('.pc').offset().left-20).css('top', $('.pc').position().top - $(div).height() + 20);
   }
   
   walk(direction) {
@@ -349,7 +366,6 @@ class Player {
         }
         break;
     }
-    
   }
   
   halt(direction) {
@@ -357,14 +373,34 @@ class Player {
     this.updateImage(this.img_default);
   }
   
-  updateImage(imgObj, scale) {
-    if (!scale) {
-      scale = 1;
+  walkTo(destination, callback) {
+    var self = this;
+    removeAllUIMenus();
+    var points = [];
+    var g = new Graph();
+    for (var i=0; i < this.location.walkpathNodes.length; i++) {
+      points.push(new Point(this.location.walkpathNodes[i].x, this.location.walkpathNodes[i].y, (this.location.walkpathNodes[i].vid).toString()));
+      var vertexes = this.location.walkpathNodes[i].connects_with.split(',');
+      var vertex = {};
+      for (var s=0; s < vertexes.length; s++) {
+        var nextPoint = $.grep(this.location.walkpathNodes, function(e){ return (e.vid).toString() == (vertexes[s]).toString(); })[0];
+        vertex[nextPoint.vid] = getPointDistance(points[i], nextPoint);
+      }
+      g.addVertex((this.location.walkpathNodes[i].vid).toString(), vertex);
     }
-    this.currentImg = imgObj;
-    $('.pc').css('background-image', 'url(' + imgObj.src + ')');
+    var destination = new Point(destination.x, destination.y);
+    var endPoint = getNearestCoordinates(points, destination);
+    var startPoint = getNearestCoordinates(points, self.pathLocation);
+    var route = g.shortestPath(startPoint.id, endPoint.id).reverse();
+    var path = [];
+    for (var i=0; i < route.length; i++) {
+      path.push($.grep(points, function(e){ return e.id == route[i]; }));
+    }
+    if (path.length) {
+      disableKeyboard();
+      this.animateWalk(path, 0, callback);
+    }
   }
-  
 
   animateWalk(array, start, callback) {
     var self = this;
@@ -416,169 +452,5 @@ class Player {
       }
     });
   }
-}
-
-function randomDemand() {
-  var text = '';
-  switch(rand(0,3)) {
-    case 0:
-      text = 'fear';
-      break;
-    case 1:
-      text = 'taste';
-      break;
-    case 2:
-      text = 'love';
-      break;
-    case 3:
-      text = 'drink';
-      break;
-  }
-  return text;
-}
-
-function randomPronoun() {
-  switch(rand(0,4)) {
-    case 0:
-      text = 'you should';
-      break;
-    case 1:
-      text = 'he will';
-      break;
-    case 2:
-      text = 'she can';
-      break;
-    case 3:
-      text = 'I will';
-      break;
-    case 4:
-      text = 'They won\'t';
-      break;
-  }
-  return text;
-}
-
-function randomNoun() {
-  switch(rand(0,15)) {
-    case 0:
-      text = 'toaster';
-      break;
-    case 1:
-      text = 'government';
-      break;
-    case 2:
-      text = 'B-12 Bomber';
-      break;
-    case 3:
-      text = 'dragons';
-      break;
-    case 4:
-      text = 'angels';
-      break;
-    case 5:
-      text = 'feline';
-      break;
-    case 6:
-      text = 'poop';
-      break;
-    case 7:
-      text = 'babies';
-      break;
-    case 8:
-      text = 'cholera';
-      break;
-    case 9:
-      text = 'ham';
-      break;
-    case 10:
-      text = 'corn';
-      break;
-    case 11:
-      text = 'children';
-      break;
-    case 12:
-      text = 'devil';
-      break;
-    case 13:
-      text = 'grain';
-      break;
-    case 14:
-      text = 'hour';
-      break;
-    case 15:
-      text = 'trials';
-      break;
-  }
-  return text;
-}
-
-function randomSaying() {
-  var text = '';
-  switch(rand(0, 4)) {
-    case 0:
-      text = 'Salvation is ';
-      break;
-    case 1:
-      text = 'Hope is ';
-      break;
-    case 2:
-      text = 'Victory is ';
-      break;
-    case 3:
-      text = 'Life is ';
-      break;
-    case 4:
-      text = 'The end is ';
-      break;
-  }
-  switch(rand(0,4)) {
-    case 0:
-      text += 'nigh';
-      break;
-    case 1:
-      text += 'ours';
-      break;
-    case 2:
-      text += 'folly';
-      break;
-    case 3:
-      text += 'death';
-      break;
-    case 4:
-      text += 'coming';
-      break;
-    case 5:
-      text += 'now';
-      break;
-  }
-  return text;
-}
-
-function generateDrunkenBabble() {
-  var saying = randomSaying();
-  return randomPronoun() + ' ' + randomDemand() + ' the <b>' + randomNoun() + '!</b> ' + saying + '! <b><i>' + saying + '!!</i></b>';
-}
-
-function Point(x, y, id) {
-  this.x = x;
-  this.y = y;
-  this.id = id;
-}
-
-function getPointDistance(point1, point2) {
-  return Math.hypot(point2.x-point1.x, point2.y-point1.y);
-}
-
-function getNearestCoordinates(array, point) {
-  var firstDistance = getPointDistance(point, array[0]);
-  var closest = array[0];
-  for (var i=1; i < array.length; i++) {
-    var dist = getPointDistance(point, array[i]);
-    if (dist < firstDistance) {
-      firstDistance = dist;
-      closest = array[i];
-    }
-  }
-  return closest;
 }
 

@@ -272,7 +272,7 @@ func handlePedestrianReaction(w http.ResponseWriter, r *http.Request) {
   perc := random(0, 9)
   if perc == 0 {
     react.Positive = true;
-    react.Money = toFixed(randomFloat(0.01, 5.00), 2)
+    react.Money = toFixed(randomFloat(0.01, 1.00), 2)
     db := DBUtils.OpenDB();
     cash := 0.00;
     db.QueryRow("select money from players WHERE playerID = ?", uid).Scan(&cash)

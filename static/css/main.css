@@ -96,6 +96,12 @@ section.controls .icon:hover {
   z-index:999;
 }
 
+.narration .standby {
+  height: 20px;
+  width: auto;
+  vertical-align: middle;
+}
+
 .speechContainer {
   position:absolute;
   opacity:0;
@@ -135,7 +141,6 @@ section.controls .icon:hover {
   display: block;
   width: 0;
 }
-
 
 
 

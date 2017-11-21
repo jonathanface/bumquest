@@ -18,6 +18,7 @@ type Item struct {
   Is_closed int `json:"is_closed"`
   Is_locked int `json:"is_locked"`
   Contained_in int `json:"contained_in"`
+  Is_takeable int `json:"is_takeable"`
 }
 
 type LookInfo struct {
@@ -125,9 +126,9 @@ func GetInventory(uid int) []Item {
   for rows.Next() {
     var currentOid int
     rows.Scan(&currentOid)
-    objRow := db.QueryRow("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in,has_inventory,interact_x, interact_y from objects WHERE objectID = ?", currentOid)
+    objRow := db.QueryRow("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in,has_inventory,interact_x, interact_y, is_takeable from objects WHERE objectID = ?", currentOid)
     item := Item{}
-    err = objRow.Scan(&item.Oid, &item.Title, &item.Image_opened, &item.Image_closed, &item.X, &item.Y, &item.Is_closed, &item.Is_locked, &item.Contained_in, &item.Has_inventory, &item.Interact_x, &item.Interact_y)
+    err = objRow.Scan(&item.Oid, &item.Title, &item.Image_opened, &item.Image_closed, &item.X, &item.Y, &item.Is_closed, &item.Is_locked, &item.Contained_in, &item.Has_inventory, &item.Interact_x, &item.Interact_y, &item.Is_takeable)
     if err != nil {
       log.Fatal(err)
     }

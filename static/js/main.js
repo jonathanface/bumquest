@@ -119,88 +119,11 @@ $(document).ready(function() {
   });
 });
 
-function pedestrianShutup(div, callback) {
-  clearTimeout($(div).data('speechTimer'));
-  if ($(div).data('bubble')) {
-    $(div).data('bubble').fadeOut('fast', function() {
-      $(this).remove();
-      $(div).data('bubble', null);
-      if (callback) {
-        console.log('rem');
-        callback();
-      }
-    });
-  }
-}
 
-function positionPedestrianBubble(div) {
-  if ($(div).data('bubble')) {
-    $(div).data('bubble').css('left', $(div).offset().left-20).css('top', $(div).position().top - $(div).data('bubble').height() + 20);
-  }
-}
-
-function pedestrianTalk(div, text) {
-  var bubble = $('<div class="speechContainer"></div>');
-  $(bubble).append('<div class="speechBubble">' + text + '</div>');
-  $(div).data('bubble', bubble);
-  $(document.body).append(bubble);
-  positionPedestrianBubble(div);
-  $(bubble).fadeTo('fast', 1);
-}
-
-
-
-function makePedestrian(area, y, direction) {
-  var div = $('<div class="pedestrian"></div>');
-  $(div).css('background-image', 'url(img/animations/pedestrian_left_1.gif)');
-  if (direction) {
-    $(div).css('background-image', 'url(img/animations/pedestrian_right_1.gif)');
-  }
-  $('main').append(div);
-  var yRange = area.lowPoint - area.highPoint;
-  var feetY = area.lowPoint - y;
-  var percTraveled = (feetY/yRange).toFixed(2);
-  var newH = $(div).height() - ($(div).height() * percTraveled);
-  var heightPercDiff = newH / $(div).height();
-  var newW = $(div).width() * heightPercDiff;
-  $(div).css('height', newH);
-  $(div).css('width', newW);
-  var destination;
-  $(div).css('left', 0 - $(div).width());
-  destination = $('main').width();
-  if (direction) {
-    $(div).css('left', $('main').width() + $(div).width());
-    destination = 0 - $(div).width();
-  }
-  $(div).css('top', y - newH);
-  $(div).css('z-index', y);
-  if (pc.isBabbling) {
-    $.getJSON(SERVICE_URL + '/pedestrianReaction', function(data) {
-      if (data.positive == true) {
-        pc.cash_earned += parseFloat(data.money);
-        pedestrianTalk(div, generatePedestrianSympathy());
-      } else {
-        pedestrianTalk(div, generatePedestrianJeer());
-      }
-    });
-      
-  }
-  $(div).animate({
-    left: destination
-  },{
-    step: function() {
-      positionPedestrianBubble(div);
-    },
-    duration: rand(3000, 8000),
-    complete: function() {
-      pedestrianShutup(div, function() {$(div).remove();});
-    }
-  });
-}
 
 function runPedestrians(area) {
   setTimeout(function() {
-    makePedestrian(area, rand(area.pedestrianTrackLow, area.pedestrianTrackHigh), rand(0,1));
+    new Pedestrian(area, pc);
     runPedestrians(area);
   }, rand(500, 20000));
 }
@@ -261,6 +184,15 @@ function interact(action, objectID) {
     case 'touch':
       pc.touch(item);
       break;
+    case 'take':
+      pc.take(item);
+      break;
+    case 'smell':
+      pc.smell(item);
+      break;
+    case 'taste':
+      pc.taste(item);
+      break;
   }
   removeAllUIMenus();
 }
@@ -286,57 +218,3 @@ function showMenu(object, xPos, yPos) {
   });
 }
 
-function rand(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function ucwords(str) {
-  str = str.toLowerCase();
-  return str.replace(/(^([a-zA-Z\p{M}]))|([ -][a-zA-Z\p{M}])/g,
-  	function(s){
-  	  return s.toUpperCase();
-	});
-}
-
-function generatePedestrianJeer() {
-  var text = '';
-  var random = rand(0, 4);
-  switch(random) {
-    case 0:
-      text = 'Get a fuckin job.';
-      break;
-    case 1:
-      text = 'You sicken me.';
-      break;
-    case 2:
-      text = 'Beat it, rummy.';
-      break;
-    case 3:
-      text = 'Look at this crazy sack of shit.';
-      break;
-    case 4:
-      text = 'Get out of my way.';
-      break;
-  }
-  return text;
-}
-
-function generatePedestrianSympathy() {
-  var text = '';
-  var random = rand(0, 3);
-  switch(random) {
-    case 0:
-      text = 'Oh you poor man.';
-      break;
-    case 1:
-      text = 'Here, pal, take this.';
-      break;
-    case 2:
-      text = 'Here. Get something to eat, okay?';
-      break;
-    case 3:
-      text = 'That\'s terrible, I\'m sorry.';
-      break;
-  }
-  return text;
-}

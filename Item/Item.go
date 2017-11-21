@@ -18,7 +18,12 @@ type Item struct {
   Is_closed int `json:"is_closed"`
   Is_locked int `json:"is_locked"`
   Contained_in int `json:"contained_in"`
+  Is_takeable int `json:"is_takeable"`
+  Is_tasteable int `json:"is_tasteable"`
+  Is_smellable int `json:"is_smellable"`
 }
+
+
 
 func GetInventory(oid int) []Item {
   db := DBUtils.OpenDB();
@@ -32,9 +37,9 @@ func GetInventory(oid int) []Item {
     var currentOid int
     rows.Scan(&currentOid)
     log.Println(currentOid)
-    objRow := db.QueryRow("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in,has_inventory,interact_x, interact_y from objects WHERE objectID = ?", currentOid)
+    objRow := db.QueryRow("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in,has_inventory,interact_x, interact_y, is_takeable, is_tasteable, is_smellable from objects WHERE objectID = ?", currentOid)
     item := Item{}
-    err = objRow.Scan(&item.Oid, &item.Title, &item.Image_opened, &item.Image_closed, &item.X, &item.Y, &item.Is_closed, &item.Is_locked, &item.Contained_in, &item.Has_inventory, &item.Interact_x, &item.Interact_y)
+    err = objRow.Scan(&item.Oid, &item.Title, &item.Image_opened, &item.Image_closed, &item.X, &item.Y, &item.Is_closed, &item.Is_locked, &item.Contained_in, &item.Has_inventory, &item.Interact_x, &item.Interact_y, &item.Is_takeable, &item.Is_tasteable, &item.Is_smellable)
     if err != nil {
       log.Fatal(err)
     }
