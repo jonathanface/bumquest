@@ -44,13 +44,16 @@ function expletive() {
   return expletives[rand(0, expletives.length-1)];
 }
 
-function narrate(text) {
+function narrate(text, timer) {
   var parent = $('<div class="narrationContainer"></div>');
   var child = $('<div class="narration"></div>');
   $(child).append(text);
   $(parent).append(child);
   $('main').append(parent);
   $(parent).fadeIn('fast');
+  if (timer) {
+    setTimeout(endNarration, timer);
+  }
 }
 
 function endNarration() {
@@ -145,25 +148,7 @@ function pedestrianTalk(div, text) {
   $(bubble).fadeTo('fast', 1);
 }
 
-function generatePedestrianJeer() {
-  var text = '';
-  var random = rand(0, 3);
-  switch(random) {
-    case 0:
-      text = 'Get a fuckin job.';
-      break;
-    case 1:
-      text = 'You sicken me.';
-      break;
-    case 2:
-      text = 'Beat it, rummy.';
-      break;
-    case 3:
-      text = 'Look at this crazy sack of shit.';
-      break;
-  }
-  return text;
-}
+
 
 function makePedestrian(area, y, direction) {
   var div = $('<div class="pedestrian"></div>');
@@ -190,7 +175,15 @@ function makePedestrian(area, y, direction) {
   $(div).css('top', y - newH);
   $(div).css('z-index', y);
   if (pc.isBabbling) {
-    pedestrianTalk(div, generatePedestrianJeer());
+    $.getJSON(SERVICE_URL + '/pedestrianReaction', function(data) {
+      if (data.positive == true) {
+        pc.cash_earned += parseFloat(data.money);
+        pedestrianTalk(div, generatePedestrianSympathy());
+      } else {
+        pedestrianTalk(div, generatePedestrianJeer());
+      }
+    });
+      
   }
   $(div).animate({
     left: destination
@@ -303,4 +296,47 @@ function ucwords(str) {
   	function(s){
   	  return s.toUpperCase();
 	});
+}
+
+function generatePedestrianJeer() {
+  var text = '';
+  var random = rand(0, 4);
+  switch(random) {
+    case 0:
+      text = 'Get a fuckin job.';
+      break;
+    case 1:
+      text = 'You sicken me.';
+      break;
+    case 2:
+      text = 'Beat it, rummy.';
+      break;
+    case 3:
+      text = 'Look at this crazy sack of shit.';
+      break;
+    case 4:
+      text = 'Get out of my way.';
+      break;
+  }
+  return text;
+}
+
+function generatePedestrianSympathy() {
+  var text = '';
+  var random = rand(0, 3);
+  switch(random) {
+    case 0:
+      text = 'Oh you poor man.';
+      break;
+    case 1:
+      text = 'Here, pal, take this.';
+      break;
+    case 2:
+      text = 'Here. Get something to eat, okay?';
+      break;
+    case 3:
+      text = 'That\'s terrible, I\'m sorry.';
+      break;
+  }
+  return text;
 }

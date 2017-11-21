@@ -6,10 +6,14 @@ import (
   "encoding/json"
   "log"
   "fmt"
+  "math/rand"
+  "math"
+  "time"
   _ "github.com/go-sql-driver/mysql"
   "github.com/gorilla/mux"
   "github.com/gorilla/sessions"
   "github.com/gorilla/context"
+  "github.com/jonathanface/bumquest/DBUtils"
   "github.com/jonathanface/bumquest/Area"
   "github.com/jonathanface/bumquest/Player"
   "github.com/jonathanface/bumquest/Item"
@@ -236,7 +240,7 @@ func handlePlayerInventory(w http.ResponseWriter, r *http.Request) {
   }
   uid := session.Values["id"].(int)
   jsonData, err := json.Marshal(Player.GetInventory(uid))
-  if (err != nil) {
+  if err != nil {
     serverError(w, err.Error())
     return
   }
@@ -248,7 +252,71 @@ func setup(w http.ResponseWriter, r *http.Request) {
   writeSuccess(w)
 }
 
+func handlePedestrianReaction(w http.ResponseWriter, r *http.Request) {
+  session, err := sessionStore.Get(r, BUMQUEST_SESSION_ID)
+  if err != nil {
+    forbidden(w, err.Error())
+    return
+  }
+  if len(session.Values) == 0 {
+    forbidden(w, "Forbidden")
+    return
+  }
+  uid := session.Values["id"].(int)
+  
+  type Reaction struct {
+    Positive bool `json:"positive"`
+    Money float64 `json:"money"`
+  }
+  react := Reaction{}
+  perc := random(0, 9)
+  if perc == 0 {
+    react.Positive = true;
+    react.Money = toFixed(randomFloat(0.01, 5.00), 2)
+    db := DBUtils.OpenDB();
+    cash := 0.00;
+    db.QueryRow("select money from players WHERE playerID = ?", uid).Scan(&cash)
+    cash = toFixed(cash + react.Money, 2)
+    stmt, err := db.Prepare("update players set money=? where playerID=?")
+    if (err != nil) {
+      log.Fatal("can't update cash")
+    }
+    defer stmt.Close()
+    _, err = stmt.Exec(cash, uid)
+    DBUtils.CloseDB(db)
+    if (err != nil) {
+      log.Fatal("can't update cash")
+    }
+  } else {
+    react.Positive = false;
+  }
+  jsonData, err := json.Marshal(react)
+  if err != nil {
+    serverError(w, err.Error())
+    return
+  }
+  fmt.Fprintf(w, string(jsonData))
+}
+
+func random(min, max int) int {
+  return rand.Intn(max - min) + min
+}
+
+func randomFloat(min, max float64) float64 {
+  return (rand.Float64()*max)+min
+}
+
+func round(num float64) int {
+    return int(num + math.Copysign(0.5, num))
+}
+
+func toFixed(num float64, precision int) float64 {
+    output := math.Pow(10, float64(precision))
+    return float64(round(num * output)) / output
+}
+
 func main() {
+  rand.Seed(time.Now().Unix())
   rtr := mux.NewRouter()
   rtr.HandleFunc(SERVICE_PATH + "/setup", setup).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/area/{[0-9]+}", handleArea).Methods("GET")
@@ -259,6 +327,7 @@ func main() {
   rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/inventory", handleItemInventory).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/item/{oid:[0-9]+}/take/{cid:[0-9]+}", handleItemTake).Methods("POST")
   rtr.HandleFunc(SERVICE_PATH + "/item/{oid:[0-9]+}/drop/{cid:[0-9]+}", handleItemDrop).Methods("PUT")
+  rtr.HandleFunc(SERVICE_PATH + "/pedestrianReaction", handlePedestrianReaction).Methods("GET")
   rtr.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
   http.Handle("/", rtr)
   

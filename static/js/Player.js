@@ -9,6 +9,7 @@ class Player {
     this.height;
     this.inventory_open = false;
     this.isBabbling = false;
+    this.atBabblePoint = false;
 
     this.img_default = document.createElement('img');
     this.img_default.onload = function() {
@@ -23,6 +24,9 @@ class Player {
       $('.pc').css('z-index', self.y + self.height);
       self.addClickAction();
     }
+    
+    this.babblePoint = new Point(350, self.location.lowPoint - 20);
+    this.cash_earned = 0;
     
     this.img_default.src = 'img/people/bum_default.png';
     this.img_forward = this.img_default;
@@ -185,23 +189,33 @@ class Player {
   }
   
   babble(step) {
+    var self = this;
     if (!step) {
       step = 0;
     }
-    var self = this;
+    if (!this.atBabblePoint) {
+      self.walkTo(self.babblePoint, function() {
+        self.atBabblePoint = true;
+        self.babble(step);
+      });
+      return;
+    }
     this.isBabbling = true;
     disableUI();
     if (step < PC_BABBLE_ATTEMPTS) {
-      this.say(generateDrunkenBabble(), 5000, function() {
+      this.say(generateDrunkenBabble(), 7000, function() {
         step++;
         setTimeout(function() {
           self.babble(step)
-        }, rand(3000, 6000));
+        }, rand(8000, 10000));
       });
     } else {
       this.isBabbling = false;
+      this.atBabblePoint = false;
       enableUI();
       endNarration();
+      narrate('Your deranged ranting earns you <b>$' + this.cash_earned + '.</b>', 3000);
+      self.cash_earned = 0;
     }
   }
   
@@ -364,8 +378,7 @@ class Player {
       var multiplier = Math.round(Math.abs(array[start][0].y - baseY) / 100);
       scale -= (0.10 * multiplier);
     }
-
-    this.updateImage(imgObj, scale);
+    this.updateImage(imgObj);
     var self = this;
     $('.pc').stop().animate({
       left: array[start][0].x - self.width/2,
@@ -376,6 +389,7 @@ class Player {
       step: function() {
         self.x = $('.pc').position().left;
         self.y = $('.pc').position().top;
+        $('.pc').css('z-index', self.y);
         $('.speechContainer').each(function(index, item) {
           self.positionSpeechBubble(item);
         });
@@ -386,6 +400,7 @@ class Player {
           self.updateImage(self.img_default, scale);
           self.x = $('.pc').position().left;
           self.y = $('.pc').position().top;
+          $('.pc').css('z-index', self.y);
           self.pathLocation = array[start][0];
           $('.speechContainer').each(function(index, item) {
             self.positionSpeechBubble(item);
@@ -403,9 +418,145 @@ class Player {
   }
 }
 
-function generateDrunkenBabble() {
+function randomDemand() {
   var text = '';
-  
+  switch(rand(0,3)) {
+    case 0:
+      text = 'fear';
+      break;
+    case 1:
+      text = 'taste';
+      break;
+    case 2:
+      text = 'love';
+      break;
+    case 3:
+      text = 'drink';
+      break;
+  }
+  return text;
+}
+
+function randomPronoun() {
+  switch(rand(0,4)) {
+    case 0:
+      text = 'you should';
+      break;
+    case 1:
+      text = 'he will';
+      break;
+    case 2:
+      text = 'she can';
+      break;
+    case 3:
+      text = 'I will';
+      break;
+    case 4:
+      text = 'They won\'t';
+      break;
+  }
+  return text;
+}
+
+function randomNoun() {
+  switch(rand(0,15)) {
+    case 0:
+      text = 'toaster';
+      break;
+    case 1:
+      text = 'government';
+      break;
+    case 2:
+      text = 'B-12 Bomber';
+      break;
+    case 3:
+      text = 'dragons';
+      break;
+    case 4:
+      text = 'angels';
+      break;
+    case 5:
+      text = 'feline';
+      break;
+    case 6:
+      text = 'poop';
+      break;
+    case 7:
+      text = 'babies';
+      break;
+    case 8:
+      text = 'cholera';
+      break;
+    case 9:
+      text = 'ham';
+      break;
+    case 10:
+      text = 'corn';
+      break;
+    case 11:
+      text = 'children';
+      break;
+    case 12:
+      text = 'devil';
+      break;
+    case 13:
+      text = 'grain';
+      break;
+    case 14:
+      text = 'hour';
+      break;
+    case 15:
+      text = 'trials';
+      break;
+  }
+  return text;
+}
+
+function randomSaying() {
+  var text = '';
+  switch(rand(0, 4)) {
+    case 0:
+      text = 'Salvation is ';
+      break;
+    case 1:
+      text = 'Hope is ';
+      break;
+    case 2:
+      text = 'Victory is ';
+      break;
+    case 3:
+      text = 'Life is ';
+      break;
+    case 4:
+      text = 'The end is ';
+      break;
+  }
+  switch(rand(0,4)) {
+    case 0:
+      text += 'nigh';
+      break;
+    case 1:
+      text += 'ours';
+      break;
+    case 2:
+      text += 'folly';
+      break;
+    case 3:
+      text += 'death';
+      break;
+    case 4:
+      text += 'coming';
+      break;
+    case 5:
+      text += 'now';
+      break;
+  }
+  return text;
+}
+
+function generateDrunkenBabble() {
+  var saying = randomSaying();
+  return randomPronoun() + ' ' + randomDemand() + ' the <b>' + randomNoun() + '!</b> ' + saying + '! <b><i>' + saying + '!!</i></b>';
 }
 
 function Point(x, y, id) {
