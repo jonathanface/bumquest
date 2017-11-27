@@ -227,6 +227,26 @@ function ucwords(str) {
 	});
 }
 
+function generatePedestrianResponse() {
+  var text = '';
+  var random = rand(0, 4);
+  switch(random) {
+    case 0:
+      text = 'What do you want?';
+      break;
+    case 1:
+      text = 'Leave me alone.';
+      break;
+    case 2:
+      text = "I'm busy.";
+      break;
+    case 3:
+      text = 'Go away.';
+      break;
+  }
+  return text;
+}
+
 function generatePedestrianJeer() {
   var text = '';
   var random = rand(0, 4);
@@ -280,4 +300,15 @@ function needsToMove(pc, object) {
   } else {
     return false;
   }
+}
+
+
+function adjustPlayerScale(pc, ypos) {
+  var yRange = pc.location.lowPoint - pc.location.highPoint;
+  var distanceTraveled = Math.abs(Math.round(pc.location.lowPoint - (ypos)));
+  var percTraveled = (distanceTraveled/yRange).toFixed(2);
+  var tempH = Math.round(pc.initial_height - (pc.height * percTraveled));
+  var heightPercDiff = tempH / pc.initial_height;
+  var tempW = Math.round(pc.initial_width * heightPercDiff);
+  return {'w': tempW, 'h':tempH};
 }

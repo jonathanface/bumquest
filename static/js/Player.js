@@ -17,11 +17,16 @@ class Player {
       self.height = self.img_default.height;
       self.pathLocation = self.location.walkpathNodes[0];
       self.x = 65;
-      self.y = area.lowPoint - self.height;
+      self.y = area.lowPoint - self.height - 5;
       self.initial_height = self.height;
       self.initial_width = self.width;
+      var dims = adjustPlayerScale(pc, self.y + self.height);
+      self.width = dims.w;
+      self.height = dims.h;
       $('main').append('<div class="pc" data-objid="pc" style="top:' + self.y + ';left:' + self.x + ';"></div>');
       $('.pc').css('z-index', self.y + self.height);
+      $('.pc').css('height', self.height);
+      $('.pc').css('width', self.width);
       self.addClickAction();
     }
     
@@ -153,7 +158,7 @@ class Player {
     if (needsToMove(self, object)) {
       var nearestPoint = getNearestCoordinates(self.location.walkpathNodes, new Point(object.interaction_x, object.interaction_y));
       clearTimeout(speechTimer);
-      self.say('Well... okay...', 2000);
+      self.say('...if you insist.', 2000);
       self.walkTo(nearestPoint, function() {
         self.taste(object)
       });
@@ -182,7 +187,7 @@ class Player {
     if (needsToMove(self, object)) {
       var nearestPoint = getNearestCoordinates(self.location.walkpathNodes, new Point(object.interaction_x, object.interaction_y));
       clearTimeout(speechTimer);
-      self.say('Well... okay...', 2000);
+      self.say('Alright, hold on...', 2000);
       self.walkTo(nearestPoint, function() {
         self.touch(object);
       });
@@ -237,6 +242,8 @@ class Player {
   say(text, timer, callback) {
     var self = this;
     if ($('.pcTalk').length) {
+      clearTimeout(speechTimer);
+      $('.pcTalk').stop();
       this.shutup(function() {pc.say(text, timer, callback)});
       return;
     }
@@ -315,7 +322,6 @@ class Player {
   
   shutup(callback) {
     clearTimeout(speechTimer);
-
     this.updateImage(this.img_default);
     $('.pcTalk').fadeOut('fast', function() {
       $(this).remove();
@@ -340,11 +346,18 @@ class Player {
           if (self.currentImg != self.img_walkleft) {
             self.updateImage(self.img_walkleft);
           }
-          self.x -= 5;
           $('.pc').stop().animate({
             left: "-=5"
-          }, 0, function() {
-            
+          }, {
+            step: function() {
+              $('.speechContainer').each(function(index, item) {
+                self.positionSpeechBubble(item);
+              });
+            },
+            duration: 0,
+            complete: function() {
+              self.x -= 5;
+            }
           });
         } else {
           self.img_default = self.img_forward;
@@ -353,16 +366,23 @@ class Player {
         }
         break;
       case 'right':
-        if (ctx.isPointInPath(self.x + 6 + self.width/2, self.y + self.height)) {
+        if (ctx.isPointInPath(self.x + 5 + self.width/2, self.y + self.height)) {
           self.img_default = self.img_walkright;
           if (self.currentImg != self.img_walkright) {
             self.updateImage(self.img_walkright);
           }
-          self.x += 5;
           $('.pc').stop().animate({
             left: "+=5"
-          }, 0, function() {
-            
+          }, {
+            step: function() {
+              $('.speechContainer').each(function(index, item) {
+                self.positionSpeechBubble(item);
+              });
+            },
+            duration: 0,
+            complete: function() {
+              self.x += 5;
+            }
           });
         } else {
           self.img_default = self.img_forward;
@@ -370,29 +390,31 @@ class Player {
           self.say(expletive(), 500);
         }
         break;
-        case 'up':
-        var yRange = self.location.lowPoint - self.location.highPoint;
-        var distanceTraveled = Math.abs(Math.round(self.location.lowPoint - (self.y + self.height)));
-        var percTraveled = (distanceTraveled/yRange).toFixed(2);
-        var tempH = self.initial_height - (self.height * percTraveled);
-        var heightPercDiff = tempH / self.initial_height;
-        var tempW = self.initial_width * heightPercDiff;
-        if (ctx.isPointInPath(self.x, self.y + tempH - 6) && ctx.isPointInPath(self.x+tempW, self.y + tempH - 6)) {
+      case 'up':
+        var newDimensions = adjustPlayerScale(self, self.y - 5 + self.height);
+        if (ctx.isPointInPath(self.x, self.y + newDimensions.h - 6) && ctx.isPointInPath(self.x+newDimensions.w, self.y + newDimensions.h - 6)) {
           self.img_default = self.img_backwards;
           if (self.currentImg != self.img_walkup) {
             self.updateImage(self.img_walkup);
           }
-          
-          self.height = tempH;
-          self.width = tempW;
-          self.y -= 5;
-          $('.pc').css('z-index', self.y);
           $('.pc').stop().animate({
             top: "-=5",
-            height: self.height,
-            width: self.width
-          }, 0, function() {
-
+            height: newDimensions.h,
+            width: newDimensions.w
+          }, {
+            step: function() {
+              $('.pc').css('z-index', $('.pc').css('top') + $('.pc').height());
+              $('.speechContainer').each(function(index, item) {
+                self.positionSpeechBubble(item);
+              });
+            },
+            duration: 0,
+            complete: function() {
+              self.height = newDimensions.h;
+              self.width = newDimensions.w;
+              self.y -= 5;
+              $('.pc').css('z-index', self.y + self.height);
+            }
           });
         } else {
           self.img_default = self.img_backwards;
@@ -401,27 +423,30 @@ class Player {
         }
         break;
       case 'down':
-        var yRange = self.location.lowPoint - self.location.highPoint;
-        var distanceTraveled = Math.abs(Math.round(self.location.lowPoint - (self.y + self.height)));
-        var percTraveled = (distanceTraveled/yRange).toFixed(2);
-        var tempH = self.initial_height - (self.height * percTraveled);
-        var heightPercDiff = tempH / self.initial_height;
-        var tempW = self.initial_width * heightPercDiff;
-        if (ctx.isPointInPath(self.x, self.y + tempH + 6) && ctx.isPointInPath(self.x+tempW, self.y + tempH + 6)) {
+        var newDimensions = adjustPlayerScale(self, self.y + 5 + self.height);
+        if (ctx.isPointInPath(self.x, self.y + newDimensions.h + 6) && ctx.isPointInPath(self.x+newDimensions.w, self.y + newDimensions.h + 6)) {
           self.img_default = self.img_forward;
           if (self.currentImg != self.img_walkdown) {
             self.updateImage(self.img_walkdown);
           }
-          self.height = tempH;
-          self.width = tempW;
-          self.y += 5;
-          $('.pc').css('z-index', self.y);
           $('.pc').stop().animate({
             top: "+=5",
-            height: self.height,
-            width: self.width
-          }, 0, function() {
-
+            height: newDimensions.h,
+            width: newDimensions.w
+          }, {
+            step: function() {
+              $('.pc').css('z-index', $('.pc').css('top') + $('.pc').height());
+              $('.speechContainer').each(function(index, item) {
+                self.positionSpeechBubble(item);
+              });
+            },
+            duration: 0,
+            complete: function() {
+              self.height = newDimensions.h;
+              self.width = newDimensions.w;
+              self.y += 5;
+              $('.pc').css('z-index', self.y + self.height);
+            }
           });
         } else {
           self.img_default = self.img_forward;
@@ -468,28 +493,31 @@ class Player {
 
   animateWalk(array, start, callback) {
     var self = this;
-    var baseY = 720;
-    var imgObj = this.img_walkright;
+    var imgObj;
     if (array[array.length-1][0].x < self.x) {
       imgObj = this.img_walkleft;
-    }
-    var scale = 1;
-    if (Math.abs(array[start][0].y - baseY) > 100) {
-      var multiplier = Math.round(Math.abs(array[start][0].y - baseY) / 100);
-      scale -= (0.10 * multiplier);
+    } else if (array[array.length-1][0].x > self.x) {
+      imgObj = this.img_walkright;
+    } else if (array[array.length-1][0].y < self.y) {
+      imgObj = this.img_walkup;
+    } else if (array[array.length-1][0].y >= self.y) {
+      imgObj = this.img_walkdown;
     }
     this.updateImage(imgObj);
-    var self = this;
+    var dims = adjustPlayerScale(self, array[start][0].y);
     $('.pc').stop().animate({
-      left: array[start][0].x - self.width/2,
-      top: array[start][0].y - self.height*scale,
-      height: self.height * scale,
-      width: self.width * scale
+      left: array[start][0].x - dims.w/2,
+      top: array[start][0].y - dims.h
     }, {
       step: function() {
         self.x = $('.pc').position().left;
-        self.y = $('.pc').position().top;
+        self.y = $('.pc').position().top + self.height;
+        var stepDims = adjustPlayerScale(self, self.y);
+        self.width = stepDims.w;
+        self.height = stepDims.h;
         $('.pc').css('z-index', self.y);
+        $('.pc').css('height', self.height);
+        $('.pc').css('width', self.width);
         $('.speechContainer').each(function(index, item) {
           self.positionSpeechBubble(item);
         });
@@ -497,10 +525,12 @@ class Player {
       duration: 1000,
       complete: function() {
         if (array[start] == array[array.length-1]) {
-          self.updateImage(self.img_default, scale);
+          self.updateImage(self.img_default);
           self.x = $('.pc').position().left;
           self.y = $('.pc').position().top;
-          $('.pc').css('z-index', self.y);
+          self.width = $('.pc').width();
+          self.height = $('.pc').height();
+          $('.pc').css('z-index', self.y + self.height);
           self.pathLocation = array[start][0];
           $('.speechContainer').each(function(index, item) {
             self.positionSpeechBubble(item);
@@ -511,6 +541,9 @@ class Player {
           }
         } else {
           start++;
+          self.x = $('.pc').position().left;
+          self.y = $('.pc').position().top;
+          $('.pc').css('z-index', self.y + self.height);
           self.animateWalk(array, start, callback);
         }
       }

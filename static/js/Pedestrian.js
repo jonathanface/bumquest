@@ -10,6 +10,13 @@ class Pedestrian {
       $(this.div).css('background-image', 'url(img/animations/pedestrian_right_1.gif)');
     }
     
+    $(this.div).click(function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      console.log(generatePedestrianResponse());
+      self.talk(generatePedestrianResponse());
+    });
+    
     $('main').append(this.div);
     var yRange = area.lowPoint - area.highPoint;
     var feetY = area.lowPoint - y;

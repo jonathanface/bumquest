@@ -9,8 +9,7 @@ type Area struct {
   Aid int `json:"aid"`
   Title string `json:"title"`
   Description string `json:"description"`
-  Walkpath string `json:"walk_path"`
-  Walktype string `json:"walk_type"`
+  Walkbounds string `json:"walk_bounds"`
   Image string `json:"image"`
   Items []Item.Item `json:"items"`
   WalkpathNodes []WalkpathNode `json:"walkpath_nodes"`
@@ -28,8 +27,10 @@ type WalkpathNode struct {
 func GetDetails(areaID int) Area {
   var area = Area{}
   db := DBUtils.OpenDB();
-  db.QueryRow("select areaID,name,description,walkCoords,walkType,image,pedLow, pedHigh from areas WHERE areaID = ?", areaID).Scan(&area.Aid, &area.Title, &area.Description, &area.Walkpath, &area.Walktype, &area.Image, &area.Pedestrian_min_y, &area.Pedestrian_max_y)
-
+  err := db.QueryRow("select areaID,name,description,walk_bounds,image,pedLow,pedHigh from areas WHERE areaID = ?", areaID).Scan(&area.Aid, &area.Title, &area.Description, &area.Walkbounds, &area.Image, &area.Pedestrian_min_y, &area.Pedestrian_max_y)
+  if (err != nil) {
+    log.Fatal(err)
+  }
   rows, err := db.Query("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in," + 
                         "has_inventory,interact_x, interact_y, lookID, takeID, smellID, tasteID, touchID, speakID " +
                         "from objects WHERE locationID = ?", areaID)

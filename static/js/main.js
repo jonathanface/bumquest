@@ -17,8 +17,9 @@ var movement, keypresses = {};
 var is_ui_disabled = false;
 
 function loadArea(areaID) {
+  console.log('aid: ' + areaID);
   $.getJSON(SERVICE_URL + 'area/' + areaID, function(data) {
-    var area = new Area(data.aid, data.title, data.description, data.image, data.walk_path, data.walk_type, data.items, data.walkpath_nodes, data.pedestrian_min_y, data.pedestrian_max_y);
+    var area = new Area(data.aid, data.title, data.description, data.image, data.walk_bounds, data.items, data.walkpath_nodes, data.pedestrian_min_y, data.pedestrian_max_y);
     $(area).on(EVENT_AREA_LOADED, function() {
       $('.controls').find('.icon:eq(0)').click(function(event) {
         event.preventDefault();
@@ -217,4 +218,5 @@ function showMenu(object, xPos, yPos) {
     });
   });
 }
+
 

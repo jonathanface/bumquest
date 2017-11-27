@@ -1,6 +1,5 @@
 class Area {
-  
-  constructor (id, title, description, image, walkPath, walkType, objects, nodes, pedLow, pedHigh) {
+  constructor (id, title, description, image, walkPath, objects, nodes, pedLow, pedHigh) {
     this.id = id;
     this.title = title;
     this.description = description;
@@ -8,12 +7,12 @@ class Area {
     const AREA_URL = 'img/areas/';
     this.AREA_URL = AREA_URL;
     this.walkPath = walkPath;
-    this.walkType = walkType;
     this.loadBackground();
     this.lowPoint = 755;
     this.highPoint = 375;
     this.pedestrianTrackLow = pedLow;
     this.pedestrianTrackHigh = pedHigh;
+    this.walkpathNodes = nodes;
     this.items = [];
     for (var i=0; i < objects.length; i++) {
       var obj = new Item(objects[i].oid, objects[i].title,
@@ -24,13 +23,9 @@ class Area {
                          objects[i].speak_id);
       this.items.push(obj);
     }
-    this.walkpathNodes = nodes;
-    
-    
   }
   
   setup() {
-    this.loadWalkpath();
     $(this).trigger(EVENT_AREA_LOADED);
   }
   
@@ -45,17 +40,6 @@ class Area {
     }
   }
 
-  loadWalkpath() {
-    var self = this;
-    var area = $('<area class="clickwalk" coords="' + this.walkPath + '" shape="' + this.walkType + '">');
-    $('body').find('map#area_' + this.id).append(area);
-    $(area).click(function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      //pc.walkTo(new Point(event.pageX - $('main').offset().left, event.pageY - $('main').offset().top));
-    });
-  }
-  
   loadBackground() {
     var self = this;
     var img = new Image();
@@ -75,6 +59,13 @@ class Area {
       }
       ctx.closePath();
       ctx.fill();
+      
+      $(canvas).click(function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        console.log('x: ' + (event.pageX - $('main').offset().left) + ', y: ' + (event.pageY - $('main').offset().top));
+      });
+      
     };
     img.src = this.AREA_URL + this.imageURL;
   }
