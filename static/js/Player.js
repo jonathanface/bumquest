@@ -101,18 +101,6 @@ class Player {
     }
   }
   
-  take (object) {
-    var self = this;
-    if (object == self) {
-      pc.say('Take myself? Where?');
-      return;
-    }
-    if (!object.takeID) {
-      this.say('I can\'t.');
-      return;
-    }
-  }
-  
   smell (object) {
     var self = this;
     if (object == self) {
@@ -177,6 +165,33 @@ class Player {
     }
   }
   
+  take(object) {
+    var self = this;
+    if (object == self) {
+      self.say("Take me? Where?");
+      return;
+    }
+
+    if (needsToMove(self, object)) {
+      var nearestPoint = getNearestCoordinates(self.location.walkpathNodes, new Point(object.interaction_x, object.interaction_y));
+      clearTimeout(speechTimer);
+      self.say('Alright, hold on...', 2000);
+      self.walkTo(nearestPoint, function() {
+        self.take(object);
+      });
+      return;
+    }
+    
+    $.getJSON(SERVICE_URL + 'item/' + object.id + '/properties', function(data) {
+      if (data.is_container && data.is_open) {
+        object.openInventory();
+      } else if (data.is_container && !data.is_open) {
+        self.say("You want me to bash my head against it or something? It's closed.");
+      }
+    });
+    
+  }
+  
   touch(object) {
     var self = this;
     if (object == self) {
@@ -193,31 +208,29 @@ class Player {
       });
       return;
     }
-    if (object.is_locked) {
-      this.say('It won\'t open.', 2000);
-      return;
-    }
-    if (object.is_closed) {
-      object.openIfClosed();
-      self.say('Fine, it\'s open now.', 2000);
-      return; 
-    }
-
-    if (!object.touchID) {
-      pc.say('I\'m not touching that.');
-      return;
-    }
-    if (object.touchText) {
-      this.updateImage(this.img_talk);
-      this.say(object.touchText);
-    } else {
-      $.getJSON(SERVICE_URL + 'item/' + object.id + '/taste', function(data) {
-        var description = data.description;
-        object.touchText = description;
-        self.updateImage(self.img_talk);
-        self.say(description);
-      });
-    }
+    $.getJSON(SERVICE_URL + 'item/' + object.id + '/properties', function(data) {
+      if (data.is_container && !data.is_open) {
+        if (object.is_locked) {
+          self.say('It won\'t open.', 2000);
+        } else {
+          object.openIfClosed();
+        }
+        return;
+      }
+      if (data.is_container && data.is_open) {
+        object.closeIfOpened();
+        return;
+      }
+      if (!data.is_container) {
+        if (!object.touchID) {
+          self.say('I\'m not touching that.');
+          return;
+        } else {
+          self.updateImage(self.img_talk);
+          self.say(data.description);
+        }
+      }
+    });
   }
   
   openInventory() {

@@ -118,7 +118,7 @@ func handleSpeakAction(w http.ResponseWriter, r *http.Request) {
     badRequest(w, "Bad Request")
     return
   }
-  jsonData, err := json.Marshal(Player.GetObjectExamineResults("speak_results", oid))
+  jsonData, err := json.Marshal(Item.GetActionText("speak_results", oid))
   if (err != nil) {
     serverError(w, err.Error())
     return
@@ -132,35 +132,33 @@ func handleLookAction(w http.ResponseWriter, r *http.Request) {
     badRequest(w, "Bad Request")
     return
   }
-  jsonData, err := json.Marshal(Player.GetObjectExamineResults("look_results", oid))
+  jsonData, err := json.Marshal(Item.GetActionText("look_results", oid))
   if (err != nil) {
     serverError(w, err.Error())
     return
   }
   fmt.Fprintf(w, string(jsonData))
 }
-
 func handleSmellAction(w http.ResponseWriter, r *http.Request) {
   isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
   if (!isValid) {
     badRequest(w, "Bad Request")
     return
   }
-  jsonData, err := json.Marshal(Player.GetObjectExamineResults("smell_results", oid))
+  jsonData, err := json.Marshal(Item.GetActionText("smell_results", oid))
   if (err != nil) {
     serverError(w, err.Error())
     return
   }
   fmt.Fprintf(w, string(jsonData))
 }
-
 func handleTasteAction(w http.ResponseWriter, r *http.Request) {
   isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
   if (!isValid) {
     badRequest(w, "Bad Request")
     return
   }
-  jsonData, err := json.Marshal(Player.GetObjectExamineResults("taste_results", oid))
+  jsonData, err := json.Marshal(Item.GetActionText("taste_results", oid))
   if (err != nil) {
     serverError(w, err.Error())
     return
@@ -174,7 +172,21 @@ func handleTouchAction(w http.ResponseWriter, r *http.Request) {
     badRequest(w, "Bad Request")
     return
   }
-  jsonData, err := json.Marshal(Player.GetObjectExamineResults("touch_results", oid))
+  jsonData, err := json.Marshal(Item.GetActionText("touch_results", oid))
+  if (err != nil) {
+    serverError(w, err.Error())
+    return
+  }
+  fmt.Fprintf(w, string(jsonData))
+}
+
+func handleObjectPropertiesRequest(w http.ResponseWriter, r *http.Request) {
+  isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+  jsonData, err := json.Marshal(Item.GetProperties(oid))
   if (err != nil) {
     serverError(w, err.Error())
     return
@@ -273,6 +285,61 @@ func handlePlayerInventory(w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, string(jsonData))
 }
 
+func handleItemOpen(w http.ResponseWriter, r *http.Request) {
+  session, err := sessionStore.Get(r, BUMQUEST_SESSION_ID)
+  if err != nil {
+    forbidden(w, err.Error())
+    return
+  }
+  if len(session.Values) == 0 {
+    forbidden(w, "Forbidden")
+    return
+  }
+  isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+
+  db := DBUtils.OpenDB();
+  stmt, err := db.Prepare("update object_properties set is_open=? where objectID=?")
+  if (err != nil) {
+    log.Fatal("can't update object open state")
+  }
+  defer stmt.Close()
+  _, err = stmt.Exec(1, oid)
+  DBUtils.CloseDB(db)
+  writeSuccess(w)
+}
+
+func handleItemClose(w http.ResponseWriter, r *http.Request) {
+  session, err := sessionStore.Get(r, BUMQUEST_SESSION_ID)
+  if err != nil {
+    forbidden(w, err.Error())
+    return
+  }
+  if len(session.Values) == 0 {
+    forbidden(w, "Forbidden")
+    return
+  }
+  isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["[0-9]+"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+
+  db := DBUtils.OpenDB();
+  log.Println(oid)
+  stmt, err := db.Prepare("update object_properties set is_open=? where objectID=?")
+  if (err != nil) {
+    log.Fatal("can't update object open state")
+  }
+  defer stmt.Close()
+  _, err = stmt.Exec(0, oid)
+  DBUtils.CloseDB(db)
+  writeSuccess(w)
+}
+
 func setup(w http.ResponseWriter, r *http.Request) {
   setSession(w, r, 1, "player_1", 5465465)
   writeSuccess(w)
@@ -352,7 +419,10 @@ func main() {
   rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/taste", handleTasteAction).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/speak", handleSpeakAction).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/touch", handleTouchAction).Methods("GET")
+  rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/properties", handleObjectPropertiesRequest).Methods("GET")
   rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/inventory", handleItemInventory).Methods("GET")
+  rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/open", handleItemOpen).Methods("PUT")
+  rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/close", handleItemClose).Methods("PUT")
   rtr.HandleFunc(SERVICE_PATH + "/item/{oid:[0-9]+}/take/{cid:[0-9]+}", handleItemTake).Methods("POST")
   rtr.HandleFunc(SERVICE_PATH + "/item/{oid:[0-9]+}/drop/{cid:[0-9]+}", handleItemDrop).Methods("PUT")
   rtr.HandleFunc(SERVICE_PATH + "/pedestrianReaction", handlePedestrianReaction).Methods("GET")

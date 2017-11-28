@@ -1,7 +1,6 @@
 class Item {
 
-  constructor (id, title, location, image_opened, image_closed, x, y, interact_x, interact_y,
-               is_closed, has_inventory, is_locked, contained_in,
+  constructor (id, title, location, image, properties, x, y, interact_x, interact_y,
                lookID, smellID, tasteID, takeID, touchID, speakID) {
     var self = this;
     
@@ -15,15 +14,14 @@ class Item {
     this.width;
     this.x = x;
     this.y = y;
-    this.image_opened = image_opened;
-    this.image_closed = image_closed;
+    this.image = image;
+    this.properties = properties;
+    this.image_opened = properties.image_opened;
+    this.image_closed = properties.image_closed;
+    this.takeable = properties.takeable;
     this.interaction_x = interact_x;
     this.interaction_y = interact_y;
 
-    this.is_closed = is_closed;
-    this.has_inventory = has_inventory;
-    this.is_locked = is_locked;
-    this.contained_in = contained_in;
     this.inventory_open = false;
     
     this.lookID = lookID;
@@ -40,10 +38,14 @@ class Item {
     this.touchText;
     this.speakText;
 
-    if (this.is_closed == 1) {
-      var imgURL = OBJ_URL + this.image_closed;
+    if (this.properties.is_container) {
+      if (this.properties.is_open == 0) {
+        var imgURL = OBJ_URL + this.image_closed;
+      } else {
+        var imgURL = OBJ_URL + this.image_opened;
+      }
     } else {
-      var imgURL = OBJ_URL + this.image_opened;
+      var imgURL = OBJ_URL + this.image;
     }
 
     this.img = $('<img data-objid="' + this.id + '" class="object">');
@@ -66,16 +68,30 @@ class Item {
   }
 
   openIfClosed() {
-    if (this.is_closed && !this.is_locked) {
-      this.is_closed = false;
-      $(this.img).attr('src', this.OBJ_URL + this.image_opened);
-    }
+    var self = this;
+    $.getJSON(SERVICE_URL + 'item/' + self.id + '/properties', function(data) {
+      if (!data.is_open && !data.is_locked) {
+        $(self.img).attr('src', self.OBJ_URL + self.image_opened);
+        $.ajax({
+          url: SERVICE_URL + 'item/' + self.id + '/open',
+          type: 'PUT'
+        });
+      }
+    });
   }
   closeIfOpened() {
-    if (!this.is_closed) {
-      this.is_closed = true;
-      $(this.img).attr('src', this.OBJ_URL + this.image_closed);
-    }
+    console.log('close');
+    console.log(this.id);
+    var self = this;
+    $.getJSON(SERVICE_URL + 'item/' + self.id + '/properties', function(data) {
+      if (data.is_open) {
+        $(self.img).attr('src', self.OBJ_URL + self.image_closed);
+        $.ajax({
+          url: SERVICE_URL + 'item/' + self.id + '/close',
+          type: 'PUT'
+        });
+      }
+    });
   }
   openInventory() {
     var self = this;

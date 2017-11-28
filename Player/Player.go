@@ -3,42 +3,8 @@ package Player
 import (
   "log"
   "github.com/jonathanface/bumquest/DBUtils"
+  "github.com/jonathanface/bumquest/Item"
 )
-
-type Item struct {
-  Oid int `json:"oid"`
-  Title string `json:"title"`
-  Image_opened string `json:"image_opened"`
-  Image_closed string `json:"image_closed"`
-  X int `json:"x"`
-  Y int `json:"y"`
-  Interact_x int `json:"interaction_x"`
-  Interact_y int `json:"interaction_y"`
-  Has_inventory int `json:"has_inventory"`
-  Is_closed int `json:"is_closed"`
-  Is_locked int `json:"is_locked"`
-  Contained_in int `json:"contained_in"`
-  Is_takeable int `json:"is_takeable"`
-}
-
-type Info struct {
-  Id int `json:"id"`
-  Description string `json:"description"`
-  Has_inventory int `json:"has_inventory"`
-  Is_closed int `json:"is_closed"`
-  Contained_in int `json:"contained_in"`
-  Is_locked int `json:"is_locked"`
-}
-
-func GetObjectExamineResults(table string, id int) Info {
-  var info = Info{}
-  info.Id = id
-  db := DBUtils.OpenDB()
-  db.QueryRow("select text from " + table + " WHERE objectID = ?", id).Scan(&info.Description)
-  db.QueryRow("select has_inventory,is_closed,contained_in,is_locked from objects WHERE objectID = ?", id).Scan(&info.Has_inventory, &info.Is_closed, &info.Contained_in, &info.Is_locked)
-  DBUtils.CloseDB(db)
-  return info
-}
 
 func Take(uid int, oid int, cid int) {
   db := DBUtils.OpenDB();
@@ -86,21 +52,29 @@ func Drop(uid int, oid int, cid int) {
   DBUtils.CloseDB(db)
 }
 
-func GetInventory(uid int) []Item {
+func GetInventory(uid int) []Item.Item {
   db := DBUtils.OpenDB();
   rows, err := db.Query("select objectID from player_inventory WHERE playerID = ?", uid)
   if (err != nil) {
     log.Fatal(err)
   }
-  var items []Item
+  var items []Item.Item
   for rows.Next() {
     var currentOid int
     rows.Scan(&currentOid)
-    objRow := db.QueryRow("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in,has_inventory,interact_x, interact_y, is_takeable from objects WHERE objectID = ?", currentOid)
-    item := Item{}
-    err = objRow.Scan(&item.Oid, &item.Title, &item.Image_opened, &item.Image_closed, &item.X, &item.Y, &item.Is_closed, &item.Is_locked, &item.Contained_in, &item.Has_inventory, &item.Interact_x, &item.Interact_y, &item.Is_takeable)
+    objRow := db.QueryRow("select objectID,name,image,x,y,containerID,interact_x, interact_y from objects WHERE objectID = ?", currentOid)
+    item := Item.Item{}
+    err = objRow.Scan(&item.Oid, &item.Title, &item.Image,&item.X, &item.Y, &item.Interact_x, &item.Interact_y)
     if err != nil {
       log.Fatal(err)
+    }
+    var has_more int
+    err = db.QueryRow("SELECT COUNT(objectID) FROM object_properties WHERE objectID=? AND (is_container=? || is_takeable=?)", item.Oid, 1, 1).Scan(&has_more)
+    if err != nil {
+      log.Fatal(err)
+    }
+    if has_more > 0 {
+      item.Properties = Item.GetProperties(currentOid)
     }
     items = append(items, item)
   }

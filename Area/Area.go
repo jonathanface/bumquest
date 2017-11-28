@@ -31,8 +31,8 @@ func GetDetails(areaID int) Area {
   if (err != nil) {
     log.Fatal(err)
   }
-  rows, err := db.Query("select objectID,name,image_opened, image_closed ,x,y,is_closed,is_locked,contained_in," + 
-                        "has_inventory,interact_x, interact_y, lookID, takeID, smellID, tasteID, touchID, speakID " +
+  rows, err := db.Query("select objectID,name,image,x,y,interact_x, interact_y," + 
+                        "lookID, takeID, smellID, tasteID, touchID, speakID " +
                         "from objects WHERE locationID = ?", areaID)
   if (err != nil) {
     log.Fatal(err)
@@ -40,11 +40,19 @@ func GetDetails(areaID int) Area {
   var items []Item.Item
   for rows.Next() {
     item := Item.Item{}
-    err = rows.Scan(&item.Oid, &item.Title, &item.Image_opened, &item.Image_closed, &item.X, &item.Y, &item.Is_closed,
-                      &item.Is_locked, &item.Contained_in, &item.Has_inventory, &item.Interact_x, &item.Interact_y,
+    err = rows.Scan(&item.Oid, &item.Title, &item.Image, &item.X, &item.Y, &item.Interact_x, &item.Interact_y,
                       &item.Look_id, &item.Take_id, &item.Smell_id, &item.Taste_id, &item.Touch_id, &item.Speak_id)
     if err != nil {
       log.Fatal(err)
+    }
+    var has_more int
+    err = db.QueryRow("SELECT COUNT(objectID) FROM object_properties WHERE objectID=? AND (is_container=? || is_takeable=?)", item.Oid, 1, 1).Scan(&has_more)
+    if err != nil {
+      log.Fatal(err)
+    }
+    log.Println(has_more)
+    if has_more > 0 {
+      item.Properties = Item.GetProperties(item.Oid)
     }
     items = append(items, item)
   }
