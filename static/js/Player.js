@@ -10,6 +10,9 @@ class Player {
     this.inventory_open = false;
     this.isBabbling = false;
     this.atBabblePoint = false;
+    
+    const OBJ_URL = 'img/objects/';
+    this.OBJ_URL = OBJ_URL;
 
     this.img_default = document.createElement('img');
     this.img_default.onload = function() {
@@ -236,14 +239,23 @@ class Player {
   openInventory() {
     var self = this;
     self.inventory_open = true;
-    $.get(TEMPLATE_URL + 'inventory.html', function(template) {
-      template = $(template);
-      $(template).find('header > i').click(function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        self.closeInventory();
+    $.getJSON(SERVICE_URL + 'player/' + self.id + '/inventory', function(inventory) {
+      $.get(TEMPLATE_URL + 'inventory.html', function(template) {
+        template = $(template);
+        $('main').append(template);
+        $(inventory).each(function(index, item) {
+          var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image + '" alt="' + item.title + '" title="' + item.title + '"></div>');
+          console.log(index);
+          console.log('len: ' + $('#player_inventory td').length)
+          $($('#player_inventory td')[index]).html(div);
+        });
+        $(template).find('header > i').click(function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          self.closeInventory();
+        });
+        
       });
-      $('main').append(template);
     });
   }
   

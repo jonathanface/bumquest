@@ -62,7 +62,7 @@ func GetInventory(uid int) []Item.Item {
   for rows.Next() {
     var currentOid int
     rows.Scan(&currentOid)
-    objRow := db.QueryRow("select objectID,name,image,x,y,containerID,interact_x, interact_y from objects WHERE objectID = ?", currentOid)
+    objRow := db.QueryRow("select objectID,name,image,x,y,interact_x, interact_y from objects WHERE objectID = ?", currentOid)
     item := Item.Item{}
     err = objRow.Scan(&item.Oid, &item.Title, &item.Image,&item.X, &item.Y, &item.Interact_x, &item.Interact_y)
     if err != nil {

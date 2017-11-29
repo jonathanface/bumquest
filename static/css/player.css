@@ -51,3 +51,14 @@ div.pc {
   width:100px;
   height:100px;
 }
+
+#player_inventory .item_container {
+  text-align:center;
+  cursor:move;
+  width:100px;
+  height:100px;
+  margin:0 auto;
+}
+#player_inventory .item_container:hover {
+  opacity:0.8;
+}

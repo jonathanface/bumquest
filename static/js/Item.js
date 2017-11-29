@@ -109,7 +109,7 @@ class Item {
         });
         $('main').append(template);
         $(inventory).each(function(index, item) {
-          var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image_closed + '" alt="' + item.title + '" title="' + item.title + '"></div>');
+          var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image + '" alt="' + item.title + '" title="' + item.title + '"></div>');
           $($('.playerInventory').find('td')[index]).html(div);
         });
         $('.playerInventory td').each(function(index, item) {
@@ -140,8 +140,9 @@ class Item {
           });
         });
         $.getJSON(SERVICE_URL + 'item/' + self.id + '/inventory', function(data) {
+          console.log(data);
           $(data).each(function(index, item) {
-            var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image_closed + '" alt="' + item.title + '" title="' + item.title + '"></div>');
+            var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image + '" alt="' + item.title + '" title="' + item.title + '"></div>');
             $($('.objectItems').find('td')[index]).html(div);
             $(div).draggable({
               containment: '#object_inventory .fg > div',
