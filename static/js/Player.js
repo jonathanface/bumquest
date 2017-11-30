@@ -4,6 +4,7 @@ class Player {
   constructor (area) {
     var self = this;
     this.id = 1;
+    this.title = 'me';
     this.location = area;
     this.width;
     this.height;
@@ -13,6 +14,9 @@ class Player {
     
     const OBJ_URL = 'img/objects/';
     this.OBJ_URL = OBJ_URL;
+    
+    const PC_URL = 'img/people/';
+    this.PC_URL = PC_URL;
 
     this.img_default = document.createElement('img');
     this.img_default.onload = function() {
@@ -36,7 +40,7 @@ class Player {
     this.babblePoint = new Point(350, self.location.lowPoint - 20);
     this.cash_earned = 0;
     
-    this.img_default.src = 'img/people/bum_default.png';
+    this.img_default.src = this.PC_URL + 'bum_default.png';
     this.img_forward = this.img_default;
     this.current_img = this.img_default;
     
@@ -243,6 +247,8 @@ class Player {
       $.get(TEMPLATE_URL + 'inventory.html', function(template) {
         template = $(template);
         $('main').append(template);
+        //var img = $('<img src="' + self.image_default + '" alt="' + self.title + '">'); 
+        $(template).find('.player_equip figure').append(self.img_default);
         $(inventory).each(function(index, item) {
           var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image + '" alt="' + item.title + '" title="' + item.title + '"></div>');
           console.log(index);

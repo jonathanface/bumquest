@@ -175,26 +175,41 @@ function interact(action, objectID) {
   if (objectID == 'pc') {
     item = pc;
   }
+  var descriptor = '';
   switch(action) {
     case 'look':
       pc.examine(item);
+      descriptor = 'Look at ';
       break;
     case 'speak':
       pc.speakTo(item);
+      descriptor = 'Speak to ';
       break;
     case 'touch':
       pc.touch(item);
+      descriptor = 'Touch ';
       break;
     case 'take':
       pc.take(item);
+      descriptor = 'Take/Look In ';
       break;
     case 'smell':
       pc.smell(item);
+      descriptor = 'Smell ';
       break;
     case 'taste':
       pc.taste(item);
+      descriptor = 'Taste ';
       break;
   }
+  var span = $('<span class="readout">' + descriptor + ucwords(item.title) + '...</span>');
+  $('main').append(span);
+  $(span).show('slow');
+  setTimeout(function() {
+    $(span).slideUp('slow', function() {
+      $(this).remove();
+    });
+  }, 3000);
   removeAllUIMenus();
 }
 
