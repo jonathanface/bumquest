@@ -1,6 +1,7 @@
 class Pedestrian {
   
   constructor(area, pc) {
+    
     var self = this;
     var direction = rand(0,1);
     var y = rand(area.pedestrianTrackLow, area.pedestrianTrackHigh);
@@ -13,8 +14,9 @@ class Pedestrian {
     $(this.div).click(function(event) {
       event.preventDefault();
       event.stopPropagation();
-      console.log(generatePedestrianResponse());
-      self.talk(generatePedestrianResponse());
+      if (!pc.isBabbling) {
+        self.talk(generatePedestrianResponse());
+      }
     });
     
     $('main').append(this.div);
@@ -46,6 +48,11 @@ class Pedestrian {
       });
         
     }
+    this.walk(destination);
+  }
+  
+  walk(destination) {
+    var self = this;
     $(this.div).animate({
       left: destination
     },{
@@ -54,14 +61,13 @@ class Pedestrian {
       },
       duration: rand(3000, 8000),
       complete: function() {
-        self.shutup(function() {$(self.div).remove();});
+        self.shutup(self.destroy.bind(self));
       }
     });
   }
 
   shutup(callback) {
     var self = this;
-    clearTimeout($(this.div).data('speechTimer'));
     if ($(this.div).data('bubble')) {
       $(this.div).data('bubble').fadeOut('fast', function() {
         $(this).remove();
@@ -70,6 +76,8 @@ class Pedestrian {
           callback();
         }
       });
+    } else if (callback) {
+      callback();
     }
   }
 
@@ -80,11 +88,21 @@ class Pedestrian {
   }
 
   talk(text) {
+    if ($(this.div).data('bubble')) {
+      $(this.div).data('bubble').stop();
+      this.shutup(function() {this.talk(text);}.bind(this));
+      return
+    }
     var bubble = $('<div class="speechContainer"></div>');
     $(bubble).append('<div class="speechBubble">' + text + '</div>');
     $(this.div).data('bubble', bubble);
     $(document.body).append(bubble);
     this.positionBubble();
     $(bubble).fadeTo('fast', 1);
+  }
+  
+  destroy() {
+    this.div.stop();
+    this.div.remove();
   }
 }

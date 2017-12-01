@@ -156,7 +156,7 @@ class Player {
       self.say('...if you insist.', 2000);
       self.walkTo(nearestPoint, function() {
         self.taste(object)
-      });
+      }.bind(self));
       return;
     }
     if (object.tasteText) {
@@ -185,7 +185,7 @@ class Player {
       self.say('Alright, hold on...', 2000);
       self.walkTo(nearestPoint, function() {
         self.take(object);
-      });
+      }.bind(self));
       return;
     }
     
@@ -212,7 +212,7 @@ class Player {
       self.say('Alright, hold on...', 2000);
       self.walkTo(nearestPoint, function() {
         self.touch(object);
-      });
+      }.bind(self));
       return;
     }
     $.getJSON(SERVICE_URL + 'item/' + object.id + '/properties', function(data) {
@@ -275,7 +275,7 @@ class Player {
     if ($('.pcTalk').length) {
       clearTimeout(speechTimer);
       $('.pcTalk').stop();
-      this.shutup(function() {pc.say(text, timer, callback)});
+      this.shutup(function() {pc.say(text, timer, callback)}.bind(self));
       return;
     }
     var div = $('<div class="speechContainer pcTalk"></div>');

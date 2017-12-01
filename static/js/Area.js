@@ -61,6 +61,7 @@ class Area {
       $(canvas).click(function(event) {
         event.preventDefault();
         event.stopPropagation();
+        removeAllUIMenus();
         console.log('x: ' + (event.pageX - $('main').offset().left) + ', y: ' + (event.pageY - $('main').offset().top));
       });
       

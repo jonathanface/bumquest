@@ -243,6 +243,9 @@ function generatePedestrianResponse() {
     case 3:
       text = 'Go away.';
       break;
+    case 4:
+      text = 'Fuck outta here.';
+      break;
   }
   return text;
 }
