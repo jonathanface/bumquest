@@ -60,6 +60,7 @@ div.pc {
   height:100px;
   max-width:100px;
   max-height:100px;
+  position:relative;
 }
 
 #player_inventory .item_container {
@@ -68,11 +69,31 @@ div.pc {
   width:100px;
   height:100px;
   margin:0 auto;
+  position:relative;
 }
 #player_inventory .item_container:hover {
-  opacity:0.8;
+ 
 }
 
 #player_inventory .player_equip {
   flex-basis:20%;
+}
+
+#player_inventory menu {
+  position:absolute;
+  margin:0px;
+  display;none;
+  background-color:#f5deb3;
+  padding:5px;
+  z-index:999;
+}
+
+#player_inventory menu menuitem {
+  display:block;
+  text-align:left;
+  padding-left:5px;
+  padding-right:5px;
+}
+#player_inventory menu menuitem:hover {
+  color:#b18434;
 }

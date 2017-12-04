@@ -234,4 +234,51 @@ function showMenu(object, xPos, yPos) {
   });
 }
 
+function getInventoryMenuXY(evt, element) {
+  var rect = element.getBoundingClientRect();
+  var scrollTop = document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop;
+  var scrollLeft = document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft;
+  var elementLeft = rect.left+scrollLeft;  
+  var elementTop = rect.top+scrollTop;
+  x = evt.pageX-elementLeft;
+  y = evt.pageY-elementTop;
+  return {x:x, y:y};
+}
+
+function removeAllContextMenus() {
+  $('#player_inventory .fg table td').each(function(index, item) {
+    removeItemContextMenu(item);
+  });
+}
+
+function removeItemContextMenu(div, callback) {
+  $(div).find('menu').fadeOut(100, function() {
+    $(div).find('menu').remove();
+    $(div).data('contextopen', false);
+    if (callback) {
+      callback();
+    }
+  });
+}
+
+function generateItemContextMenu(div, item, event) {
+  if ($(div).find('menu').length) {
+    removeItemContextMenu(div, function() {
+      generateItemContextMenu(div, item, event);
+    });
+    return;
+  }
+  $(div).data('contextopen', true);
+  var menu = $('<menu>');
+  $(menu).append('<menuitem>Take</menuitem>');
+  $(menu).append('<menuitem>Examine</menuitem>');
+  $(menu).append('<menuitem>Open</menuitem>');
+  var coords = getInventoryMenuXY(event.originalEvent, div);
+  $(menu).css('left', coords.x);
+  $(menu).css('top', coords.y);
+  $(div).append(menu);
+  $(menu).fadeIn(100);
+
+}
+
 

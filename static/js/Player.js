@@ -251,9 +251,27 @@ class Player {
         $(template).find('.player_equip figure').append(self.img_default);
         $(inventory).each(function(index, item) {
           var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image + '" alt="' + item.title + '" title="' + item.title + '"></div>');
-          console.log(index);
-          console.log('len: ' + $('#player_inventory td').length)
           $($('#player_inventory td')[index]).html(div);
+          $($('#player_inventory td')[index]).contextmenu(function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            $(this).css('opacity', 1);
+            generateItemContextMenu(this, item, event);
+          });
+          $($('#player_inventory td')[index]).hover(function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if ($(this).data('contextopen') != true) {
+              $(this).css('opacity', 0.8);
+            }
+          }, function(event) {
+            $(this).css('opacity', 1);
+          });
+        });
+        $('#player_inventory .fg table').click(function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          removeAllContextMenus();
         });
         $(template).find('header > i').click(function(event) {
           event.preventDefault();
@@ -319,7 +337,7 @@ class Player {
       self.walkTo(self.babblePoint, function() {
         self.atBabblePoint = true;
         self.babble(step);
-      });
+      }.bind(self));
       return;
     }
     this.isBabbling = true;
@@ -519,6 +537,8 @@ class Player {
     if (path.length) {
       disableKeyboard();
       this.animateWalk(path, 0, callback);
+    } else if (callback) {
+      callback();
     }
   }
 
