@@ -11,6 +11,7 @@ class Player {
     this.inventory_open = false;
     this.isBabbling = false;
     this.atBabblePoint = false;
+    this.inventory = [];
     
     const OBJ_URL = 'img/objects/';
     this.OBJ_URL = OBJ_URL;
@@ -250,6 +251,11 @@ class Player {
         //var img = $('<img src="' + self.image_default + '" alt="' + self.title + '">'); 
         $(template).find('.player_equip figure').append(self.img_default);
         $(inventory).each(function(index, item) {
+          var obj = new Item(item.oid, item.title, 'pc_inventory', item.image, item.properties,
+                         item.x, item.y, item.interaction_x, item.interaction_y,
+                         item.look_id, item.smell_id, item.taste_id,
+                         item.take_id, item.touch_id, item.speak_id);
+          self.inventory.push(obj);
           var div = $('<div class="item_container" data-objid="' + item.oid + '"><img src="' + self.OBJ_URL + item.image + '" alt="' + item.title + '" title="' + item.title + '"></div>');
           $($('#player_inventory td')[index]).html(div);
           $($('#player_inventory td')[index]).contextmenu(function(event) {
@@ -267,11 +273,34 @@ class Player {
           }, function(event) {
             $(this).css('opacity', 1);
           });
+          var draggable = $($('#player_inventory td')[index]).children('div');
+          makeInventoryItemDraggable(draggable);
         });
         $('#player_inventory .fg table').click(function(event) {
           event.preventDefault();
           event.stopPropagation();
           removeAllContextMenus();
+        });
+        $('#player_inventory .fg .action_drop').droppable({
+          drop: function(event, ui) {
+            var item = getInventoryItemByID($(ui.draggable).attr('data-objid'));
+            var service = 'item/' + $(ui.draggable).attr('data-objid') + '/droponground/' + self.location.id + '/' + self.x + '/' + (self.y + self.height);
+              
+            $.ajax({
+              //item/{oid:[0-9]+}/droponground/{aid:[0-9]+}{x:[0-9]+}{y:[0-9]+}
+              url: SERVICE_URL + service,
+              type: 'PUT',
+              success: function(result) {
+                console.log(result)
+                item.x = self.x;
+                item.y = self.y + self.height;
+                item.location = self.location.id;
+                self.location.items.push(item);
+                var copy = $(ui.draggable).clone();
+                $(ui.draggable).remove();
+              }
+            });
+          }
         });
         $(template).find('header > i').click(function(event) {
           event.preventDefault();
@@ -282,7 +311,7 @@ class Player {
       });
     });
   }
-  
+
   closeInventory() {
     $('#player_inventory').remove();
     this.inventory_open = false;
@@ -352,10 +381,14 @@ class Player {
     } else {
       this.isBabbling = false;
       this.atBabblePoint = false;
-      enableUI();
       endNarration();
       narrate('Your deranged ranting earns you <b>$' + this.cash_earned + '.</b>', 3000);
-      self.cash_earned = 0;
+      this.cash_earned = 0;
+      setTimeout(function() {
+        enableUI();
+        self.say('Whoop de fuckin doo.', 1000);
+      }, 1000);
+      
     }
   }
   
@@ -601,4 +634,24 @@ class Player {
     });
   }
 }
+
+function getInventoryItemByID(id) {
+  return $.grep(pc.inventory, function(e){ return e.id == id; });
+}
+
+function makeInventoryItemDraggable(div) {
+    $(div).draggable({
+      containment: '#player_inventory .fg',
+      helper: 'clone',
+      appendTo: '#player_inventory .fg',
+      revert: 'invalid',
+      revertDuration: 100,
+      start: function(event, ui) {
+        $(this).hide();
+      },
+      stop: function(event, ui) {
+        $(this).show();
+      }
+    });
+  }
 

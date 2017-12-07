@@ -211,6 +211,7 @@ func handleItemInventory(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleItemDrop(w http.ResponseWriter, r *http.Request) {
+  log.Println("handling item drop request")
   session, err := sessionStore.Get(r, BUMQUEST_SESSION_ID)
   if err != nil {
     forbidden(w, err.Error())
@@ -235,6 +236,48 @@ func handleItemDrop(w http.ResponseWriter, r *http.Request) {
     return
   }
   Player.Drop(uid, oid, cid)
+  writeSuccess(w)
+}
+
+func handleItemDropOnGround(w http.ResponseWriter, r *http.Request) {
+  log.Println("handling item drop on ground request")
+  session, err := sessionStore.Get(r, BUMQUEST_SESSION_ID)
+  if err != nil {
+    forbidden(w, err.Error())
+    return
+  }
+  if len(session.Values) == 0 {
+    forbidden(w, "Forbidden")
+    return
+  }
+  
+  uid := session.Values["id"].(int)
+
+  isValid, oid := convertAndVerifyStringToInt(mux.Vars(r)["oid"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+
+  isValid, aid := convertAndVerifyStringToInt(mux.Vars(r)["aid"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+  
+  isValid, x := convertAndVerifyStringToInt(mux.Vars(r)["x"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+  
+  isValid, y := convertAndVerifyStringToInt(mux.Vars(r)["y"], w)
+  if (!isValid) {
+    badRequest(w, "Bad Request")
+    return
+  }
+  
+  Player.DropOnGround(uid, oid, aid, x, y)
   writeSuccess(w)
 }
 
@@ -425,6 +468,7 @@ func main() {
   rtr.HandleFunc(SERVICE_PATH + "/item/{[0-9]+}/close", handleItemClose).Methods("PUT")
   rtr.HandleFunc(SERVICE_PATH + "/item/{oid:[0-9]+}/take/{cid:[0-9]+}", handleItemTake).Methods("POST")
   rtr.HandleFunc(SERVICE_PATH + "/item/{oid:[0-9]+}/drop/{cid:[0-9]+}", handleItemDrop).Methods("PUT")
+  rtr.HandleFunc(SERVICE_PATH + "/item/{oid:[0-9]+}/droponground/{aid:[0-9]+}/{x:[0-9]+}/{y:[0-9]+}", handleItemDropOnGround).Methods("PUT")
   rtr.HandleFunc(SERVICE_PATH + "/pedestrianReaction", handlePedestrianReaction).Methods("GET")
   rtr.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
   http.Handle("/", rtr)

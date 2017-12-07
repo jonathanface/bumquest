@@ -18,7 +18,8 @@ class Item {
     this.properties = properties;
     this.image_opened = properties.image_opened;
     this.image_closed = properties.image_closed;
-    this.takeable = properties.takeable;
+    this.takeable = properties.is_takeable;
+    console.log(properties);
     this.interaction_x = interact_x;
     this.interaction_y = interact_y;
 
@@ -56,6 +57,10 @@ class Item {
     $(this.img).attr('src', imgURL);
     $(this.img).css('left', this.x);
     $(this.img).css('top', this.y);
+    if (this.takeable) {
+      console.log('??');
+      $(this.img).addClass('takeable');
+    }
     $('main').append(this.img);
 
     $(this.img).click(function(event) {

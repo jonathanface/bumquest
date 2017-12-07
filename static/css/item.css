@@ -4,6 +4,15 @@
   cursor:pointer;
 }
 
+.object.takeable {
+  transform: scaleX(0.5);
+  transform: scaleY(0.5);
+}
+.object.takeable:hover {
+  cursor:pointer;
+  box-shadow: 0px 0px 5px yellow;
+}
+
 #object_inventory .bg {
   position: absolute;
   width: 90%;

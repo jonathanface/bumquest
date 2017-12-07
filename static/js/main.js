@@ -270,9 +270,39 @@ function generateItemContextMenu(div, item, event) {
   }
   $(div).data('contextopen', true);
   var menu = $('<menu>');
-  $(menu).append('<menuitem>Take</menuitem>');
-  $(menu).append('<menuitem>Examine</menuitem>');
-  $(menu).append('<menuitem>Open</menuitem>');
+  $(menu).append('<menuitem class="look"><i class="fa fa-search fa-lg"></i></menuitem>');
+  $(menu).append('<menuitem class="open"><i class="fa fa-folder-open fa-lg"></i></menuitem>');
+  $(menu).find('menuitem').click(function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if ($(this).hasClass('look')) {
+      if ($('#player_inventory .action_results .readout').length) {
+        removeObjectInteractionText($('#player_inventory .action_results .readout')[0]);
+      }
+      if (!$.trim(item.properties.description).length) {
+        $.getJSON(SERVICE_URL + 'item/' + item.oid + '/look', function (response) {
+          item.properties.description = response.description;
+          narrateObjectInteractionText(item.properties.description);
+        });
+      } else {
+        narrateObjectInteractionText(item.properties.description);
+      }
+    }
+    if ($(this).hasClass('open')) {
+      if ($('#player_inventory .action_results .readout').length) {
+        removeObjectInteractionText($('#player_inventory .action_results .readout')[0]);
+      }
+      if (!item.properties.is_container) {
+        narrateObjectInteractionText('It won\'t open.');
+      } else {
+        $.getJSON(SERVICE_URL + 'item/' + item.oid + '/open', function (response) {
+          narrateObjectInteractionText('It\'s open now.');
+        });
+      }
+    }
+    removeItemContextMenu(div);
+  });
   var coords = getInventoryMenuXY(event.originalEvent, div);
   $(menu).css('left', coords.x);
   $(menu).css('top', coords.y);
@@ -281,4 +311,17 @@ function generateItemContextMenu(div, item, event) {
 
 }
 
+function narrateObjectInteractionText(text) {
+  var div = $('<div class="readout">' + text + '</div>');
+  $('#player_inventory .action_results').append(div);
+  $(div).show('slow');
+}
 
+function removeObjectInteractionText(div, callback) {
+  $(div).hide('slow', function() {
+    $(this).remove();
+    if (callback) {
+      callback();
+    }
+  });
+}

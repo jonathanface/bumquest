@@ -52,6 +52,29 @@ func Drop(uid int, oid int, cid int) {
   DBUtils.CloseDB(db)
 }
 
+func DropOnGround(uid int, oid int, aid int, x int, y int) {
+  db := DBUtils.OpenDB();
+  stmt, err := db.Prepare("DELETE FROM player_inventory WHERE playerID = ? AND objectID = ?")
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  defer stmt.Close()
+  _, err = stmt.Exec(uid, oid)
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  stmt, err = db.Prepare("UPDATE objects SET locationID=?, x=?, y=? WHERE objectID=?")
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  defer stmt.Close()
+  _, err = stmt.Exec(aid, x, y, oid)
+  if (err != nil) {
+    log.Fatal(err)
+  }
+  DBUtils.CloseDB(db)
+}
+
 func GetInventory(uid int) []Item.Item {
   db := DBUtils.OpenDB();
   rows, err := db.Query("select objectID from player_inventory WHERE playerID = ?", uid)

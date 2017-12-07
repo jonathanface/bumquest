@@ -79,6 +79,24 @@ div.pc {
   flex-basis:20%;
 }
 
+#player_inventory .action_results {
+  flex-basis:80%;
+  width:80%;
+}
+#player_inventory .action_results .readout {
+  position:relative;
+  left:initial;
+  bottom:initial;
+  margin-top:20px;
+}
+
+#player_inventory .action_drop {
+  flex-basis:20%;
+  color:#1bbb45;
+  text-align:center;
+}
+
+
 #player_inventory menu {
   position:absolute;
   margin:0px;
@@ -93,6 +111,10 @@ div.pc {
   text-align:left;
   padding-left:5px;
   padding-right:5px;
+  line-height:25px;
+  height:25px;
+  vertical-align:middle;
+  cursor:pointer;
 }
 #player_inventory menu menuitem:hover {
   color:#b18434;
