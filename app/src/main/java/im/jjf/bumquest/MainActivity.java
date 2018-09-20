@@ -1,6 +1,7 @@
 package im.jjf.bumquest;
 
 import android.animation.ValueAnimator;
+import android.graphics.drawable.AnimationDrawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.MotionEvent;
@@ -10,15 +11,10 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.graphics.Bitmap;
-import android.widget.TextView;
 
-import com.bumptech.glide.request.target.DrawableImageViewTarget;
-import com.bumptech.glide.request.target.SizeReadyCallback;
 
 
 public class MainActivity extends AppCompatActivity {
-
-    private int img_state = 2131099735;
     private int org_bum_height = 0;
     private int org_bum_width = 0;
 
@@ -58,11 +54,12 @@ public class MainActivity extends AppCompatActivity {
                 bum.getViewTreeObserver().removeOnPreDrawListener(this);
                 org_bum_height = bum.getMeasuredHeight();
                 org_bum_width = bum.getMeasuredWidth();
+                ImageView area = findViewById(R.id.area);
+                bum.setX(area.getWidth()/2 - bum.getWidth()/2);
+                bum.setY(area.getHeight() - bum.getHeight() - 10);
                 return true;
             }
         });
-
-
 
         walk.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -104,22 +101,28 @@ public class MainActivity extends AppCompatActivity {
                                 float perc = ((newY + org_bum_height) / areaH);
                                 setRelativeHeight(bum, perc);
                             }
-                            int img = R.drawable.bum_default;
-                            if (endX < bum.getX()) {
-                                img = R.drawable.bum_walk_left;
-                            } else if (endX > bum.getX()) {
-                                img = R.drawable.bum_walk_right;
-                            } else if (endY < bum.getY()) {
-                                img = R.drawable.bum_walk_up;
-                            } else if (endY > bum.getY()) {
-                                img = R.drawable.bum_walk_down;
-                            }
 
-                            //Log.wtf("perc", String.valueOf(Math.round(perc)));
-                            DrawableImageViewTarget bumTarget = new DrawableImageViewTarget(bum);
-                            if (img_state != img) {
-                                GlideApp.with(getApplicationContext()).load(img).into(bumTarget);
-                                img_state = img;
+                            AnimationDrawable walk = (AnimationDrawable) getResources().getDrawable(R.drawable.walk_left, getTheme());
+                            boolean isAnimating = false;
+                            if (endX < bum.getX()) {
+                                isAnimating = true;
+                                walk = (AnimationDrawable) getResources().getDrawable(R.drawable.walk_left, getTheme());
+                            } else if (endX > bum.getX()) {
+                                isAnimating = true;
+                                walk = (AnimationDrawable) getResources().getDrawable(R.drawable.walk_right, getTheme());
+                            } else if (endY < bum.getY()) {
+                                isAnimating = true;
+                                walk = (AnimationDrawable) getResources().getDrawable(R.drawable.walk_up, getTheme());
+                            } else if (endY > bum.getY()) {
+                                isAnimating = true;
+                                walk = (AnimationDrawable) getResources().getDrawable(R.drawable.walk_down, getTheme());
+                            }
+                            if (isAnimating) {
+                                bum.setImageDrawable(walk);
+                                walk.start();
+                            }
+                            if (newX == endX && newY == endY) {
+                                bum.setImageResource(R.drawable.bum_default);
                             }
                         }
                     });

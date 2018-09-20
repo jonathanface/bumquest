@@ -19,21 +19,13 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:alpha="0" />
-    <LinearLayout
-        android:id="@+id/bg"
-        android:orientation="horizontal"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:paddingLeft="300dp"
-        android:gravity="left" >
-        <ImageView
-            android:id="@+id/bum"
-            android:layout_width="94px"
-            android:layout_height="wrap_content"
-            android:adjustViewBounds="true"
-            android:layout_gravity="bottom"
 
-            android:src="@drawable/bum_default" />
-    </LinearLayout>
+    <ImageView
+        android:id="@+id/bum"
+        android:layout_width="94px"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
+        android:layout_gravity="bottom"
+        android:src="@drawable/bum_default" />
 
 </android.support.constraint.ConstraintLayout>
