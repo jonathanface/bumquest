@@ -1,0 +1,37 @@
+{
+  "name": "bumquest",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "minify": "uglifyjs static/js/dist/bundle.js -o static/js/dist/bundle.min.js",
+    "build": "browserify -d static/js/src/Globals.jsx static/js/src/main.jsx static/js/src/Area.jsx static/js/src/Player.jsx static/js/src/Landing.jsx -o static/js/dist/bundle.js -t [ babelify --presets [ @babel/preset-env @babel/preset-react ] --plugins [ @babel/plugin-proposal-class-properties ] ]"
+  },
+  "keywords": [],
+  "author": "Jonathan Face",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/plugin-transform-runtime": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "@babel/preset-react": "^7.0.0",
+    "@babel/runtime": "^7.5.5",
+    "babelify": "^10.0.0",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  },
+  "dependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.5.5",
+    "pathfinding": "^0.4.18",
+    "uglify-js": "^3.6.0",
+    "uglifyify": "^5.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonathanface/bumquest.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jonathanface/bumquest/issues"
+  },
+  "homepage": "https://github.com/jonathanface/bumquest#readme",
+  "description": ""
+}

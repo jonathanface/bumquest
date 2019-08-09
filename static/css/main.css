@@ -1,0 +1,19 @@
+
+html, body {
+  height:100%;
+}
+
+body {
+  margin:0px;
+  min-height:100%;
+}
+
+.canvas-container {
+  
+  margin:0 auto;
+}
+
+canvas {
+  border:3px solid #333;
+  margin:0 auto;
+}
