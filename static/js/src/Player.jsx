@@ -1,13 +1,17 @@
+import {Globals} from './Globals.jsx'
+
 export class Player {
   
-  constructor(id, canvas, parent, area) {
+  constructor(id, canvas, parent) {
     this.id = id;
     this.parent = parent;
     this.canvas = canvas;
-    this.location = area;
+    this.location = null;
 
-    this.x = 40;
-    this.y = 700;
+    this.x = 0;
+    this.y = 0;
+    this.imgX = 40;
+    this.imgY = 400;
     this.height = 0;
     this.width = 0;
     this.maxHeight = 0;
@@ -18,27 +22,24 @@ export class Player {
   }
   
   render() {
+    console.log('rend');
     let self = this;
     
     this.bumDefault = new Image();
     this.bumDefault.onload = function() {
+      console.log('ld');
       self.maxWidth = this.width;
       self.maxHeight = this.height;
-      
-      self.setX(self.x);
-      self.setY(self.y);
+      self.height = this.height;
+      self.width = this.width;
+
       self.sprite = new fabric.Image(self.bumDefault, {
-        left: self.x - this.width/2,
-        top: self.y - this.height,
+        left: self.imgX,
+        top: self.imgY,
         selectable:false
       });
-      self.scaleSpriteByYCoord(self.y);
-      self.sprite.set('top', (self.y + Math.abs(self.maxHeight - self.height)) - self.height);
-      self.sprite.set('left', self.x + Math.abs(self.maxWidth - self.width));
-      self.sprite.setCoords();
-      self.canvas.renderAll();
-      
       self.canvas.add(self.sprite);
+      window.dispatchEvent(new Event(Globals.EVENT_PLAYER_READY));
     };
     this.bumDefault.src = 'img/people/bum_default.png';
     
@@ -52,6 +53,21 @@ export class Player {
     this.bumUp.src = 'img/people/bum_backwards.png';
   }
   
+  resample() {
+    console.log(this);
+    this.scaleSpriteByYCoord(this.imgY + this.height);
+      
+    this.imgX = this.imgX + Math.abs(this.maxWidth - this.width);
+    this.imgY = this.imgY + Math.abs(this.maxHeight - this.height);
+
+    this.sprite.set('top', this.imgY);
+    this.sprite.set('left', this.imgX);
+    this.x = this.imgX + this.width/2;
+    this.y = this.imgY + this.height;
+    console.log(this.x, this.y);
+    this.sprite.setCoords();
+  }
+  
   calculateSizeFromYPos(y) {
     let perc = (y-this.location.vanishingPoint)/(this.location.height - this.location.vanishingPoint);
     let newH = (this.maxHeight * perc);
@@ -60,6 +76,7 @@ export class Player {
   }
   
   scaleSpriteByYCoord(y) {
+    console.log('scaling', this);
     let oldH = this.height;
     let oldW = this.width;
     if (!oldH) {
@@ -70,31 +87,14 @@ export class Player {
     }
     
     let size = this.calculateSizeFromYPos(y);
+    console.log('sz', size);
     this.sprite.scaleToHeight(size.h);
     this.sprite.scaleToWidth(size.w);
     this.height = size.h;
     this.width = size.w;
+    
   }
-  
-  setX(x) {
-    if (x < 0) {
-      x = 0;
-    }
-    if (x > this.canvas.width) {
-      x = this.canvas.width - this.width;
-    }
-    this.x = x;
-  }
-  
-  setY(y) {
-    if (y < 0) {
-      y = 0;
-    }
-    if (y > this.canvas.height) {
-      y = this.canvas.height;
-    }
-    this.y = y;
-  }
+
   
   getX() {
     return Math.round(this.x);
@@ -127,8 +127,8 @@ export class Player {
         self.animateWalk(path);
       }});
     } else {
-      self.setX(path[path.length-1][0]);
-      self.setY(path[path.length-1][1]);
+      self.x = path[path.length-1][0];
+      self.y = path[path.length-1][1];
       this.sprite.setElement(this.bumDefault);
       this.scaleSpriteByYCoord(path[path.length-1][1]);
       this.sprite.animate('left', path[path.length-1][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
