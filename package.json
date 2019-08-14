@@ -23,7 +23,8 @@
     "@babel/plugin-proposal-class-properties": "^7.5.5",
     "pathfinding": "^0.4.18",
     "uglify-js": "^3.6.0",
-    "uglifyify": "^5.0.1"
+    "uglifyify": "^5.0.1",
+    "extend": ">=2.02"
   },
   "repository": {
     "type": "git",
