@@ -23,7 +23,7 @@ export class Landing extends React.Component {
       self.state.currentArea = new Area(self.state.currentLocation, canvas, self);
       self.state.player.location = self.state.currentArea;
       self.state.player.resample();
-      //self.state.currentArea.enterCombat();
+      self.state.currentArea.enterCombat();
     });
     this.state.player = new Player(0, canvas, this);
     

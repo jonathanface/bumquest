@@ -18,6 +18,11 @@ export class Player {
     this.maxWidth = 0;
     this.animatingCount = 0;
     
+    this.stats = {};
+    this.stats.speed = 8;
+    
+    this.isMoving = false;
+    
     this.render();
   }
   
@@ -112,7 +117,7 @@ export class Player {
         this.sprite.setElement(this.bumLeft);
       } else if (path[this.animatingCount][0] > this.getX()) {
         this.sprite.setElement(this.bumRight);
-      } else if (path[this.animatingCount][1] > this.getY()) {
+      } else if (path[this.animatingCount][1] < this.getY()) {
         this.sprite.setElement(this.bumUp);
       } else if (path[this.animatingCount][0] > this.getY()) {
         this.sprite.setElement(this.bumDefault);
@@ -123,7 +128,7 @@ export class Player {
       this.scaleSpriteByYCoord(path[self.animatingCount][1]);
       this.sprite.animate('left', path[this.animatingCount][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
       this.sprite.animate('top', path[this.animatingCount][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas), onComplete: function() {
-        self.animatingCount += 100;
+        self.animatingCount ++;
         self.animateWalk(path);
       }});
     } else {
@@ -135,10 +140,12 @@ export class Player {
       this.sprite.animate('top', path[path.length-1][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas)});
       //
       console.log('done');
+      self.isMoving = false;
     }
   }
   
   walkRoute(path) {
+    this.isMoving = true;
     this.animatingCount = 0;
     this.animateWalk(path);
   }
