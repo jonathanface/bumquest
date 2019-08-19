@@ -1,4 +1,6 @@
-
+* {
+  box-sizing:border-box;
+}
 html, body {
   height:100%;
 }
@@ -6,6 +8,8 @@ html, body {
 body {
   margin:0px;
   min-height:100%;
+  font-family:Verdana,Tahoma,Geneva,sans-serif;
+  font-size:18px;
 }
 
 .canvas-container {

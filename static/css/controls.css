@@ -1,0 +1,25 @@
+.controls {
+  margin:0 auto;
+  padding:10px;
+  background-color:#333;
+  width:1024px;
+  height:150px;
+}
+
+.controls .console {
+  font-family:'Share Tech Mono', monospace;
+  background-color:#000;
+  color:green;
+  width:25%;
+  height:100%;
+  font-size:0.8rem;
+  letter-spacing:0.5px;
+  padding:10px;
+  border-radius:10px;
+  border:3px solid gray;
+}
+
+.controls .console p {
+  margin:0px;
+  margin-top:3px;
+}

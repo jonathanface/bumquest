@@ -1,6 +1,6 @@
 import {Globals} from './Globals.jsx'
 
-export class Player {
+export class NPC {
   
   constructor(id, canvas, parent) {
     this.id = id;
@@ -10,7 +10,7 @@ export class Player {
 
     this.x = 0;
     this.y = 0;
-    this.imgX = 40;
+    this.imgX = 950;
     this.imgY = 400;
     this.height = 0;
     this.width = 0;
@@ -39,48 +39,42 @@ export class Player {
     this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2);
     this.stats.luckModifier = this.stats.luck/100;
     
-    
-    
     this.isMoving = false;
-    
     this.render();
   }
   
-  
   render() {
-    console.log('rend');
     let self = this;
     
-    this.bumDefault = new Image();
-    this.bumDefault.onload = function() {
-      console.log('ld');
+    this.npcDefault = new Image();
+    this.npcDefault.onload = function() {
       self.maxWidth = this.width;
       self.maxHeight = this.height;
       self.height = this.height;
       self.width = this.width;
 
-      self.sprite = new fabric.Image(self.bumDefault, {
+      self.sprite = new fabric.Image(self.npcDefault, {
         left: self.imgX,
         top: self.imgY,
         selectable:false
       });
       self.canvas.add(self.sprite);
-      window.dispatchEvent(new Event(Globals.EVENT_PLAYER_READY));
+      window.dispatchEvent(new Event(Globals.EVENT_NPC_READY));
     };
-    this.bumDefault.src = 'img/people/bum_default.png';
+    this.npcDefault.src = 'img/people/generic_enemy.png';
     
-    this.bumLeft = new Image();
-    this.bumLeft.src = 'img/people/bum_left.png';
+    this.npcLeft = new Image();
+    this.npcLeft.src = 'img/people/generic_enemy_left.png';
     
-    this.bumRight = new Image();
-    this.bumRight.src = 'img/people/bum_right.png';
+    this.npcRight = new Image();
+    this.npcRight.src = 'img/people/generic_enemy_right.png';
     
-    this.bumUp = new Image();
-    this.bumUp.src = 'img/people/bum_backwards.png';
+    this.npcUp = new Image();
+    this.npcUp.src = 'img/people/generic_enemy_backwards.png';
   }
   
   resample() {
-    console.log(this);
+    console.log('smple', this);
     this.scaleSpriteByYCoord(this.imgY + this.height);
       
     this.imgX = this.imgX + Math.abs(this.maxWidth - this.width);
@@ -90,7 +84,6 @@ export class Player {
     this.sprite.set('left', this.imgX);
     this.x = this.imgX + this.width/2;
     this.y = this.imgY + this.height;
-    console.log(this.x, this.y);
     this.sprite.setCoords();
   }
   
@@ -102,7 +95,6 @@ export class Player {
   }
   
   scaleSpriteByYCoord(y) {
-    console.log('scaling', this);
     let oldH = this.height;
     let oldW = this.width;
     if (!oldH) {
@@ -113,7 +105,6 @@ export class Player {
     }
     
     let size = this.calculateSizeFromYPos(y);
-    console.log('sz', size);
     this.sprite.scaleToHeight(size.h);
     this.sprite.scaleToWidth(size.w);
     this.height = size.h;
@@ -133,7 +124,6 @@ export class Player {
   animateWalk(path) {
     let self = this;
     if (this.animatingCount < path.length) {
-      
       if (path[this.animatingCount][0] < this.getX()) {
         this.sprite.setElement(this.bumLeft);
       } else if (path[this.animatingCount][0] > this.getX()) {

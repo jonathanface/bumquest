@@ -19,9 +19,8 @@ export class Area {
     this.walkPoints.push({x:1023, y:767});
     this.walkPoints.push({x:0, y:767});
     this.walkPoints.push({x:0, y:673});
-    this.stats = {};
-    this.stats.ap = 8;
-    this.stats.speed = 8;
+    
+    this.enemies = [];
     
     //398px / 30 feet = 13.3
     this.height = 768;
@@ -149,14 +148,42 @@ export class Area {
   getPlayer() {
     return this.parent.state.player;
   }
+  
+  determineCombatOrder() {
+    let player = this.getPlayer();
+    let order = [];
+    let en = this.enemies.sort((a, b) => (a.stats.speed > b.stats.speed) ? 1 : -1);
+    let playerAdded = false;
+    console.log('en', this.enemies[0]);
+    console.log('spd', en[0].stats.speed, player.stats.speed);
+    for (let i=0; i < this.enemies.length; i++) {
+      
+      if (this.enemies[i].stats.speed > player.stats.speed) {
+        order.push(this.enemies[i]);
+      } else {
+        console.log('push');
+        if (!playerAdded) {
+          order.push(player);
+          playerAdded = true;
+        }
+        order.push(this.enemies[i]);
+      }
+    }
+    return order;
+  }
 
   enterCombat() {
     let self = this;
     let player = this.getPlayer();
     if (player) {
       this.combatOn = true;
-
-      
+      self.parent.print("Some asshole is here!");
+      this.canvas.on('mouse:out', function(event) {
+        this.remove(self.moveLine);
+        this.remove(self.moveText);
+        self.moveLine = null;
+        self.moveText = null;
+      });
 
       this.canvas.on('mouse:move', function(event) {
         let start = {};
@@ -166,14 +193,14 @@ export class Area {
           
           let coords = [start.x, start.y, start.x, start.y];
           self.moveLine = new fabric.Line(coords, {
-            stroke: 'red',
+            stroke: 'black',
             strokeWidth: 3,
             selectable:false
           });
           self.canvas.add(self.moveLine);
         }
         if (!self.moveText && !player.isMoving) {
-          self.moveText = new fabric.Text('X', { left: 100, top: 100, fontFamily:'verdana,geneva,sans-serif', fontSize:18, fontWeight:'bold', fill:'red'});
+          self.moveText = new fabric.Text('X', { left: 100, top: 100, fontFamily:'verdana,geneva,sans-serif', fontSize:18, fontWeight:'bold', fill:'green'});
           self.canvas.add(self.moveText);
         }
         let end = {};
@@ -189,12 +216,15 @@ export class Area {
           if (path && path.length) {
             self.moveText.set({text:path.length.toString(), left:textPos.x, top:textPos.y});
             if (path.length <= player.stats.speed) {
-              self.moveText.set({fill:'black'});
+              self.moveLine.set({stroke:'green'});
+              self.moveText.set({fill:'green'});
             } else {
+              self.moveLine.set({stroke:'red'});
               self.moveText.set({fill:'red'});
             }
           } else {
-            self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'red'});
+            self.moveLine.set({stroke:'black'});
+            self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'black'});
           }
         } else {
           self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'red'});
@@ -202,6 +232,8 @@ export class Area {
         this.renderAll();
         
       });
+      let order = this.determineCombatOrder();
+      console.log('order', order);
     } else {
       //setTimeout(this.enterCombat.bind(this), 500);
     }

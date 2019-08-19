@@ -8,6 +8,9 @@ export class Globals {
   
   static EVENT_PLAYER_READY = 'playerReady';
   static EVENT_AREA_READY = 'areaReady';
+  static EVENT_NPC_READY = 'npcReady';
   
-  
+  static random(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
 }
