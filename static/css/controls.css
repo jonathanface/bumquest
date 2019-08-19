@@ -17,9 +17,25 @@
   padding:10px;
   border-radius:10px;
   border:3px solid gray;
+  display:inline-block;
 }
 
 .controls .console p {
   margin:0px;
   margin-top:3px;
+}
+
+.controls .vertical_bar {
+  display:inline-block;
+  width:25px;
+  text-align:center;
+}
+
+.controls .vertical_bar a {
+  color:white;
+  cursor:pointer;
+}
+
+.controls .vertical_bar a:hover {
+  color:yellow;
 }

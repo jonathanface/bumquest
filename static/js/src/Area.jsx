@@ -152,16 +152,15 @@ export class Area {
   determineCombatOrder() {
     let player = this.getPlayer();
     let order = [];
-    let en = this.enemies.sort((a, b) => (a.stats.speed > b.stats.speed) ? 1 : -1);
+    this.enemies.sort((a, b) => (a.stats.speed > b.stats.speed) ? 1 : -1);
     let playerAdded = false;
-    console.log('en', this.enemies[0]);
-    console.log('spd', en[0].stats.speed, player.stats.speed);
     for (let i=0; i < this.enemies.length; i++) {
-      
       if (this.enemies[i].stats.speed > player.stats.speed) {
         order.push(this.enemies[i]);
+        if (i == this.enemies.length-1 && !playerAdded) {
+          order.push(player);
+        }
       } else {
-        console.log('push');
         if (!playerAdded) {
           order.push(player);
           playerAdded = true;

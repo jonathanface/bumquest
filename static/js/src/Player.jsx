@@ -38,6 +38,18 @@ export class Player {
     //derived stats
     this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2);
     this.stats.luckModifier = this.stats.luck/100;
+    this.stats.tolerance = this.stats.fortitude/100;
+    
+    this.skills = {};
+    this.skills.beggin = 5 + (this.stats.charisma + this.stats.attention);
+    this.skills.shootin = 5 + (this.stats.attention);
+    this.skills.scrappin = 5 + (this.stats.strength + this.stats.attention);
+    this.skills.wrappin = 5 + (this.stats.perception + this.stats.intelligence);
+    this.skills.fixin = 5 + (this.stats.intelligence + this.stats.agility);
+    this.skills.learnin = 5 + (this.stats.intelligence);
+    this.skills.rantin = 5 + (this.stats.intelligence + this.stats.attention);
+    this.skills.shittin = 5 + (this.stats.fortitude + this.stats.charisma);
+    this.skills.sleepin = 5 + (this.stats.fortitude);
     
     
     
@@ -170,5 +182,5 @@ export class Player {
     this.animatingCount = 0;
     this.animateWalk(path);
   }
-  
+
 }

@@ -1,0 +1,68 @@
+.sheet {
+  margin:0 auto;
+  position:absolute;
+  top:0px;
+  width:1024px;
+  height:768px;
+  left:50%;
+  margin-left:-512px;
+  background-color:#695151;
+  padding:20px;
+  vertical-align:top;
+  display:flex;
+  justify-content:space-between;
+}
+.sheet .base_stats {
+ 
+}
+.sheet .base_stats .labels {
+  font-size:1rem;
+  color:#fff;
+  letter-spacing:1px;
+  display:inline-block;
+  vertical-align:top;
+}
+
+.sheet .base_stats .labels .first {
+  font-size:2rem;
+  color:#fbfbc2;
+  margin-right:2px;
+  display:inline-block;
+  width:50px;
+  text-align:center;
+  border:1px solid #fbfbc2;
+  padding:5px;
+  border-radius: 10px;
+}
+
+.sheet .base_stats .values {
+  font-size:1rem;
+  color:green;
+  letter-spacing:1px;
+  display:inline-block;
+  vertical-align:top;
+}
+
+.sheet .base_stats .values .box {
+  font-size:2rem;
+  color:green;
+  margin-right:2px;
+  display:inline-block;
+  width:50px;
+  text-align:center;
+  border:1px solid #c5c5c5;
+  padding:5px;
+  background-color: #000;
+  border-radius: 10px;
+}
+
+.sheet .skills {
+  color:#FFF;
+  width:200px;
+}
+
+.sheet .skills .value {
+  margin-left:10px;
+  color:#fbfbc2;
+  float:right;
+}

@@ -36,7 +36,7 @@ export class NPC {
     this.stats.strength = 5;
     
     //derived stats
-    this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2);
+    this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2)+2;
     this.stats.luckModifier = this.stats.luck/100;
     
     this.isMoving = false;
