@@ -1,32 +1,36 @@
 package API
 
 import (
-  "context"
-  "encoding/json"
-  "errors"
-  "database/sql"
-  "log"
-  "net/http"
-  "time"
-  
-  _ "github.com/go-sql-driver/mysql"
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"log"
+	"net/http"
+	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
-	AUTH_ID          = "filthybum"
-	API_SALT         = "bGTUVBJFk6"
-	API_SECRET       = "3Rmton0u8qfp"
-  
-  JWT_EXPIRE_TIME  = 8 * time.Hour
+	AUTH_ID         = "filthybum"
+	API_SALT        = "bGTUVBJFk6"
+	API_SECRET      = "3Rmton0u8qfp"
+	DB_HOST         = "52.4.79.128"
+	DB_PORT         = "3306"
+	DB_USER         = "jack"
+	DB_PASS         = "h0b0st3w"
+	DB_BUMQUEST     = "bumquest"
+	JWT_EXPIRE_TIME = 8 * time.Hour
 )
 
 var bum_db *sql.DB
+
 //"username:password@tcp(127.0.0.1:3306)/test")
 var dbConnStr = DB_USER + ":" + DB_PASS + "@tcp(" + DB_HOST + ":" + DB_PORT + ")/" + DB_BUMQUEST
 
-
 func Initialize() {
-  log.Println(dbConnStr)
+	log.Println(dbConnStr)
 	dbConnect()
 }
 

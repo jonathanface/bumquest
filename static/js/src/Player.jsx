@@ -37,14 +37,15 @@ export class Player {
     
     //derived stats
     this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2);
-    this.stats.luckModifier = this.stats.luck/100;
-    this.stats.tolerance = this.stats.fortitude/100;
+    this.stats.tolerance = this.stats.fortitude*5;
+    this.stats.smell = Math.round(this.stats.charisma/2);
+    console.log('sm', this.stats.smell);
     
     this.skills = {};
     this.skills.beggin = 5 + (this.stats.charisma + this.stats.attention);
     this.skills.shootin = 5 + (this.stats.attention);
     this.skills.scrappin = 5 + (this.stats.strength + this.stats.attention);
-    this.skills.wrappin = 5 + (this.stats.perception + this.stats.intelligence);
+    this.skills.wrappin = 5 + (this.stats.attention + this.stats.intelligence);
     this.skills.fixin = 5 + (this.stats.intelligence + this.stats.agility);
     this.skills.learnin = 5 + (this.stats.intelligence);
     this.skills.rantin = 5 + (this.stats.intelligence + this.stats.attention);
@@ -56,6 +57,13 @@ export class Player {
     this.isMoving = false;
     
     this.render();
+  }
+  
+  getSmellLabel(smell) {
+    let smells = ['NOXIOUS', 'DISGUSTING', 'FOUL', 'NOT GREAT', 'MILD'];
+    let colors = ['#f55442', '#f5c242', '#eff542', '#b9f542', '#42f57b'];
+    console.log('sml', smell);
+    return [smells[smell], colors[smell]];
   }
   
   

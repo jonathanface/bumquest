@@ -3,7 +3,7 @@ export class Globals {
   static ROOT_ELEMENT = document.getElementById('root');
   static AREAS_DIR = '/img/areas/';
   static TEMPLATE_DIR = '/templates/';
-  static API_URL = '/api/';
+  static API_DIR = '/api/';
   
   static GRID_SQUARE_WIDTH = 95;
   static GRID_SQUARE_HEIGHT = 25;
