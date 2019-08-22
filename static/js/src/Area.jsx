@@ -1,5 +1,6 @@
 import PF from 'pathfinding';
 import {Globals} from './Globals.jsx'
+import {CombatManager} from './CombatManager.jsx'
 
 export class Area {
   
@@ -7,6 +8,7 @@ export class Area {
     this.id = id;
     this.parent = parent;
     this.canvas = canvas;
+    this.combat = null;
     console.log('init area with id', this.id);
     
     this.walkPoints = [];
@@ -28,8 +30,6 @@ export class Area {
     this.vanishingPoint = 202;
     
     this.walkPath;
-    this.moveLine;
-    this.moveText;
     
     this.combatOn = false;
     
@@ -80,22 +80,18 @@ export class Area {
         //this.canvas.add(rect);
       }
     }
-    console.log(this.grid);
   }
   
-  findPath(ctx, start, end) {
+  findPath(start, end) {
+    //console.log('frompath', start, 'end', end);
     this.generateWalkGrid();
     try {
-      console.log('grid', this.grid);
-      return this.pathfinder.findPath(Math.ceil(start.x/Globals.GRID_SQUARE_WIDTH), Math.ceil(start.y/Globals.GRID_SQUARE_HEIGHT),
-                                      Math.ceil(end.x/Globals.GRID_SQUARE_WIDTH), Math.ceil(end.y/Globals.GRID_SQUARE_HEIGHT), this.grid);
+      //console.log('grid', this.grid);
+      return this.pathfinder.findPath(Math.round(start.x/Globals.GRID_SQUARE_WIDTH), Math.round(start.y/Globals.GRID_SQUARE_HEIGHT),
+                                      Math.round(end.x/Globals.GRID_SQUARE_WIDTH), Math.round(end.y/Globals.GRID_SQUARE_HEIGHT), this.grid);
     } catch(e) {
       console.log(e);
     }
-
-    //path = PF.Util.smoothenPath(this.grid, path);
-    //path = PF.Util.expandPath(path);
-
   }
   
   drawWalkpath() {
@@ -123,13 +119,13 @@ export class Area {
       end.x = Math.round(event.clientX - bounds.left);
       end.y = Math.round(event.clientY - bounds.top);
       if (self.walkPath.isPointInPath(end.x, end.y)) {
-        let path = self.findPath(self.walkPath, start, end);
+        let path = self.findPath(start, end);
         if (path && path.length) {
           if (self.combatOn) {
-            self.canvas.remove(self.moveLine);
-            self.moveLine = null;
-            self.canvas.remove(self.moveText);
-            self.moveText = null;
+            self.canvas.remove(self.combat.moveLine);
+            self.combat.moveLine = null;
+            self.canvas.remove(self.combat.moveText);
+            self.combat.moveText = null;
             if (self.getPlayer().isMoving || path.length > self.getPlayer().stats.speed) {
               return;
             }
@@ -149,92 +145,12 @@ export class Area {
     return this.parent.state.player;
   }
   
-  determineCombatOrder() {
-    let player = this.getPlayer();
-    let order = [];
-    this.enemies.sort((a, b) => (a.stats.speed > b.stats.speed) ? 1 : -1);
-    let playerAdded = false;
-    for (let i=0; i < this.enemies.length; i++) {
-      if (this.enemies[i].stats.speed > player.stats.speed) {
-        order.push(this.enemies[i]);
-        if (i == this.enemies.length-1 && !playerAdded) {
-          order.push(player);
-        }
-      } else {
-        if (!playerAdded) {
-          order.push(player);
-          playerAdded = true;
-        }
-        order.push(this.enemies[i]);
-      }
-    }
-    return order;
-  }
-
   enterCombat() {
     let self = this;
     let player = this.getPlayer();
     if (player) {
       this.combatOn = true;
-      self.parent.print("Some asshole is here!");
-      this.canvas.on('mouse:out', function(event) {
-        this.remove(self.moveLine);
-        this.remove(self.moveText);
-        self.moveLine = null;
-        self.moveText = null;
-      });
-
-      this.canvas.on('mouse:move', function(event) {
-        let start = {};
-        start.x = player.getX();
-        start.y = player.getY();
-        if (!self.moveLine && !player.isMoving) {
-          
-          let coords = [start.x, start.y, start.x, start.y];
-          self.moveLine = new fabric.Line(coords, {
-            stroke: 'black',
-            strokeWidth: 3,
-            selectable:false
-          });
-          self.canvas.add(self.moveLine);
-        }
-        if (!self.moveText && !player.isMoving) {
-          self.moveText = new fabric.Text('X', { left: 100, top: 100, fontFamily:'verdana,geneva,sans-serif', fontSize:18, fontWeight:'bold', fill:'green'});
-          self.canvas.add(self.moveText);
-        }
-        let end = {};
-        end.x = Math.round(event.pointer.x);
-        end.y = Math.round(event.pointer.y);
-        
-        self.moveLine.set({'x2':end.x, 'y2':end.y});
-        let textPos = Object.assign({}, end);
-        textPos.x += 10;
-        textPos.y -= 7;
-        if (self.walkPath.isPointInPath(end.x, end.y)) {
-          let path = self.findPath(self.walkPath, start, end);
-          if (path && path.length) {
-            self.moveText.set({text:path.length.toString(), left:textPos.x, top:textPos.y});
-            if (path.length <= player.stats.speed) {
-              self.moveLine.set({stroke:'green'});
-              self.moveText.set({fill:'green'});
-            } else {
-              self.moveLine.set({stroke:'red'});
-              self.moveText.set({fill:'red'});
-            }
-          } else {
-            self.moveLine.set({stroke:'black'});
-            self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'black'});
-          }
-        } else {
-          self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'red'});
-        }
-        this.renderAll();
-        
-      });
-      let order = this.determineCombatOrder();
-      console.log('order', order);
-    } else {
-      //setTimeout(this.enterCombat.bind(this), 500);
+      this.combat = new CombatManager(player, this);
     }
   }
 }

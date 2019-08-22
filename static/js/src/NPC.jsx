@@ -3,6 +3,7 @@ import {Globals} from './Globals.jsx'
 export class NPC {
   
   constructor(id, canvas, parent) {
+    this.type = 'npc';
     this.id = id;
     this.parent = parent;
     this.canvas = canvas;
@@ -10,7 +11,7 @@ export class NPC {
 
     this.x = 0;
     this.y = 0;
-    this.imgX = 950;
+    this.imgX = 900;
     this.imgY = 400;
     this.height = 0;
     this.width = 0;
@@ -28,18 +29,33 @@ export class NPC {
     Luck
     Strength*/
     this.stats.fortitude = 5;
-    this.stats.agility = 5;
+    this.stats.agility = 3;
     this.stats.charisma = 5;
     this.stats.intelligence = 5;
-    this.stats.attention = 5;
+    this.stats.attention = 3;
     this.stats.luck = 5;
     this.stats.strength = 5;
     
     //derived stats
-    this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2)+2;
-    this.stats.luckModifier = this.stats.luck/100;
+    this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2);
+    this.stats.tolerance = this.stats.fortitude*5;
+    this.stats.smell = Math.round(this.stats.charisma/2);
+    
+    this.remainingMoves = this.stats.speed;
+    
+    this.skills = {};
+    this.skills.beggin = 5 + (this.stats.charisma + this.stats.attention);
+    this.skills.shootin = 5 + (this.stats.attention);
+    this.skills.scrappin = 5 + (this.stats.strength + this.stats.attention);
+    this.skills.wrappin = 5 + (this.stats.attention + this.stats.intelligence);
+    this.skills.fixin = 5 + (this.stats.intelligence + this.stats.agility);
+    this.skills.learnin = 5 + (this.stats.intelligence);
+    this.skills.rantin = 5 + (this.stats.intelligence + this.stats.attention);
+    this.skills.shittin = 5 + (this.stats.fortitude + this.stats.charisma);
+    this.skills.sleepin = 5 + (this.stats.fortitude);
     
     this.isMoving = false;
+    this.usingMelee = true;
     this.render();
   }
   
@@ -84,6 +100,7 @@ export class NPC {
     this.sprite.set('left', this.imgX);
     this.x = this.imgX + this.width/2;
     this.y = this.imgY + this.height;
+    console.log(this.x, this.y);
     this.sprite.setCoords();
   }
   
@@ -123,34 +140,35 @@ export class NPC {
   
   animateWalk(path) {
     let self = this;
-    if (this.animatingCount < path.length) {
-      if (path[this.animatingCount][0] < this.getX()) {
-        this.sprite.setElement(this.bumLeft);
-      } else if (path[this.animatingCount][0] > this.getX()) {
-        this.sprite.setElement(this.bumRight);
-      } else if (path[this.animatingCount][1] < this.getY()) {
-        this.sprite.setElement(this.bumUp);
-      } else if (path[this.animatingCount][0] > this.getY()) {
-        this.sprite.setElement(this.bumDefault);
+    if (self.animatingCount < path.length) {
+      if (path[self.animatingCount][0] < self.getX()) {
+        self.sprite.setElement(self.npcLeft);
+      } else if (path[self.animatingCount][0] > self.getX()) {
+        self.sprite.setElement(self.npcRight);
+      } else if (path[self.animatingCount][1] < self.getY()) {
+        self.sprite.setElement(self.npcUp);
+      } else if (path[self.animatingCount][0] > self.getY()) {
+        self.sprite.setElement(self.npcDefault);
       } else {
-        this.sprite.setElement(this.bumDefault);
+        self.sprite.setElement(self.npcDefault);
       }
-      
-      this.scaleSpriteByYCoord(path[self.animatingCount][1]);
-      this.sprite.animate('left', path[this.animatingCount][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
-      this.sprite.animate('top', path[this.animatingCount][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas), onComplete: function() {
-        self.animatingCount ++;
+      //console.log('mv', path[self.animatingCount][0] - self.width/2, path[self.animatingCount][1] - self.height);
+      self.scaleSpriteByYCoord(path[self.animatingCount][1]);
+      self.sprite.animate('left', path[self.animatingCount][0] - self.width/2, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas) });
+      self.sprite.animate('top', path[self.animatingCount][1] - self.height, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas), onComplete: function() {
+        self.animatingCount++;
+        self.remainingMoves--;
         self.animateWalk(path);
       }});
     } else {
       self.x = path[path.length-1][0];
       self.y = path[path.length-1][1];
-      this.sprite.setElement(this.bumDefault);
-      this.scaleSpriteByYCoord(path[path.length-1][1]);
-      this.sprite.animate('left', path[path.length-1][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
-      this.sprite.animate('top', path[path.length-1][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas)});
+      self.sprite.setElement(self.npcDefault);
+      self.scaleSpriteByYCoord(path[path.length-1][1]);
+      self.sprite.animate('left', path[path.length-1][0] - self.width/2, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas) });
+      self.sprite.animate('top', path[path.length-1][1] - self.height, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas)});
       //
-      console.log('done');
+      console.log('done', path[path.length-1][0] - self.width/2, path[path.length-1][1] - self.height);
       self.isMoving = false;
     }
   }

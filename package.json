@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "minify": "uglifyjs static/js/dist/bundle.js -o static/js/dist/bundle.min.js",
-    "build": "browserify -d static/js/src/Globals.jsx static/js/src/main.jsx static/js/src/Area.jsx static/js/src/Player.jsx static/js/src/Landing.jsx -o static/js/dist/bundle.js -t [ babelify --presets [ @babel/preset-env @babel/preset-react ] --plugins [ @babel/plugin-proposal-class-properties ] ]"
+    "build": "browserify -d static/js/src/Globals.jsx static/js/src/main.jsx static/js/src/Area.jsx static/js/src/Player.jsx static/js/src/Landing.jsx static/js/src/CombatManager.jsx -o static/js/dist/bundle.js -t [ babelify --presets [ @babel/preset-env @babel/preset-react ] --plugins [ @babel/plugin-proposal-class-properties ] ]"
   },
   "keywords": [],
   "author": "Jonathan Face",

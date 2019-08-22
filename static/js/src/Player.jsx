@@ -3,6 +3,7 @@ import {Globals} from './Globals.jsx'
 export class Player {
   
   constructor(id, canvas, parent) {
+    this.type = 'player';
     this.id = id;
     this.parent = parent;
     this.canvas = canvas;
@@ -39,7 +40,8 @@ export class Player {
     this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2);
     this.stats.tolerance = this.stats.fortitude*5;
     this.stats.smell = Math.round(this.stats.charisma/2);
-    console.log('sm', this.stats.smell);
+    
+    this.remainingMoves = this.stats.speed;
     
     this.skills = {};
     this.skills.beggin = 5 + (this.stats.charisma + this.stats.attention);
@@ -122,7 +124,6 @@ export class Player {
   }
   
   scaleSpriteByYCoord(y) {
-    console.log('scaling', this);
     let oldH = this.height;
     let oldW = this.width;
     if (!oldH) {
@@ -133,7 +134,6 @@ export class Player {
     }
     
     let size = this.calculateSizeFromYPos(y);
-    console.log('sz', size);
     this.sprite.scaleToHeight(size.h);
     this.sprite.scaleToWidth(size.w);
     this.height = size.h;
@@ -170,6 +170,7 @@ export class Player {
       this.sprite.animate('left', path[this.animatingCount][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
       this.sprite.animate('top', path[this.animatingCount][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas), onComplete: function() {
         self.animatingCount ++;
+        self.remainingMoves--;
         self.animateWalk(path);
       }});
     } else {
@@ -180,7 +181,7 @@ export class Player {
       this.sprite.animate('left', path[path.length-1][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
       this.sprite.animate('top', path[path.length-1][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas)});
       //
-      console.log('done');
+      console.log('done', path[path.length-1][0] - this.width/2, path[path.length-1][1] - this.height);
       self.isMoving = false;
     }
   }

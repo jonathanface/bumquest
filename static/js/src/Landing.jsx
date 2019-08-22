@@ -31,6 +31,7 @@ export class Landing extends React.Component {
             npc.resample();
             npc.location.enemies.push(npc);
             self.print('Some asshole is here!');
+            self.state.currentArea.enterCombat();
           });
           let npc = new NPC(0, canvas, this);
         });
