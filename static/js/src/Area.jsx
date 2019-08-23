@@ -51,7 +51,7 @@ export class Area {
   }
   
   generateWalkGrid() {
-    let scaleW = Math.ceil(this.width/Globals.GRID_SQUARE_WIDTH);
+    let scaleW = Math.ceil(this.width/Globals.GRID_SQUARE_WIDTH*4);
     let scaleH = Math.ceil(this.height/Globals.GRID_SQUARE_HEIGHT);
     this.grid = new PF.Grid(scaleW, scaleH);
     for (let i=0; i < scaleW; i++) {
@@ -86,11 +86,11 @@ export class Area {
     //console.log('frompath', start, 'end', end);
     this.generateWalkGrid();
     try {
-      //console.log('grid', this.grid);
       return this.pathfinder.findPath(Math.round(start.x/Globals.GRID_SQUARE_WIDTH), Math.round(start.y/Globals.GRID_SQUARE_HEIGHT),
                                       Math.round(end.x/Globals.GRID_SQUARE_WIDTH), Math.round(end.y/Globals.GRID_SQUARE_HEIGHT), this.grid);
     } catch(e) {
       console.log(e);
+      return false;
     }
   }
   
@@ -120,13 +120,15 @@ export class Area {
       end.y = Math.round(event.clientY - bounds.top);
       if (self.walkPath.isPointInPath(end.x, end.y)) {
         let path = self.findPath(start, end);
+        
         if (path && path.length) {
           if (self.combatOn) {
             self.canvas.remove(self.combat.moveLine);
             self.combat.moveLine = null;
             self.canvas.remove(self.combat.moveText);
             self.combat.moveText = null;
-            if (self.getPlayer().isMoving || path.length > self.getPlayer().stats.speed) {
+            
+            if (self.getPlayer().isMoving || path.length/4 > self.getPlayer().remainingMoves) {
               return;
             }
           }
@@ -143,6 +145,10 @@ export class Area {
   
   getPlayer() {
     return this.parent.state.player;
+  }
+  
+  endCombatTurn() {
+    this.combat.endPlayerTurn();
   }
   
   enterCombat() {

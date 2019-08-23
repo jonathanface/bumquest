@@ -20,9 +20,6 @@ export class Landing extends React.Component {
     let self = this;
     let canvas = new fabric.Canvas('c');
     window.addEventListener(Globals.EVENT_PLAYER_READY, async function(event) {
-      console.log('ready', event);
-      
-      
       let dbInfo = await self.queryDB('GET', Globals.API_DIR + 'area/' + '29c94708-c44c-11e9-bc97-0e49f1f8e77c');
       if (dbInfo) {
         window.addEventListener(Globals.EVENT_AREA_READY, function(event) {
@@ -47,6 +44,10 @@ export class Landing extends React.Component {
       
     });
     this.state.player = new Player(0, canvas, this);
+  }
+  
+  endCombatTurn() {
+    this.state.currentArea.endCombatTurn();
   }
   
   print(text) {
@@ -141,9 +142,13 @@ export class Landing extends React.Component {
         <div className="controls">
           <div className="console"></div>
           <div className="vertical_bar">
-            <a onClick={this.showCharacterSheet.bind(this)}>
-              <i className="fas fa-info"></i>
-            </a>
+            <a onClick={this.showCharacterSheet.bind(this)}>INFO</a>
+            <a onClick={this.endCombatTurn.bind(this)}>END TURN</a>
+            <a>POCKETS</a>
+          </div>
+          <div className="center_stats">
+            <label htmlFor="movement_points">Movement Points:</label>
+            <span id="movement_points"></span>
           </div>
         </div>
       </div>

@@ -15,11 +15,13 @@ export class CombatManager {
     
     this.addMouseActions();
     this.combatSequence = 0;
+    this.updateMovementPointsDisplay(this.player.remainingMoves);
+    
     this.nextTurn();
   }
   
   checkRemainingNPCMoves(npc) {
-    console.log('mvs', npc.remainingMoves);
+    console.log('npc mvs', npc.remainingMoves);
     if (npc.remainingMoves <= 0) {
       console.log('npc turn complete');
       clearInterval(this.npcTurnInterval);
@@ -37,17 +39,22 @@ export class CombatManager {
     }, 100);
     let playerPos = {'x':self.player.getX(), 'y':self.player.getY()};
     let path = self.area.findPath({'x':npc.getX(), 'y':npc.getY()}, playerPos);
-    path = path.splice(0, path.length-1);
+    if (path) {
+      path = path.splice(0, path.length-1);
+    }
+    console.log('dist to player', path.length);
     if (path.length > 1 && npc.usingMelee) {
-      if (path.length > npc.stats.speed) {
-        path = path.splice(0, npc.stats.speed);
+      if (path.length/4 > npc.stats.speed) {
+        path = path.splice(0, npc.stats.speed*4);
       }
       for (let i=0; i < path.length; i++) {
         path[i][0] *= Globals.GRID_SQUARE_WIDTH;
         path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
       }
+      npc.walkRoute(path, npc.attack.bind(npc));
+    } else {
+      npc.remainingMoves = 0;
     }
-    npc.walkRoute(path);
   }
   
   checkRemainingPlayerMoves(player) {
@@ -70,7 +77,6 @@ export class CombatManager {
   nextTurn(sequence) {
     let self = this;
     let order = this.determineCombatOrder();
-    console.log('ord', order[this.combatSequence]);
     if (this.combatSequence >= order.length && this.enemies.length) {
       this.combatSequence = 0;
     }
@@ -82,6 +88,7 @@ export class CombatManager {
         this.doNPCTurn(order[this.combatSequence]);
       } else {
         console.log('player turn');
+        this.updateMovementPointsDisplay(this.player.remainingMoves);
         this.playerTurn = true;
         self.playerTurnInterval = setInterval(function() {
           self.checkRemainingPlayerMoves(order[this.combatSequence]);
@@ -111,6 +118,14 @@ export class CombatManager {
     return order;
   }
   
+  endPlayerTurn() {
+    this.player.remainingMoves = 0;
+  }
+  
+  updateMovementPointsDisplay(value) {
+    document.querySelector('#movement_points').innerHTML = value;
+  }
+
   addMouseActions() {
     let self = this;
     
@@ -127,6 +142,10 @@ export class CombatManager {
         let start = {};
         start.x = player.getX();
         start.y = player.getY();
+        
+        let end = {};
+        end.x = Math.round(event.pointer.x);
+        end.y = Math.round(event.pointer.y);
         if (!self.moveLine && !player.isMoving) {
           let coords = [start.x, start.y, start.x, start.y];
           self.moveLine = new fabric.Line(coords, {
@@ -140,31 +159,33 @@ export class CombatManager {
           self.moveText = new fabric.Text('X', { left: 100, top: 100, fontFamily:'verdana,geneva,sans-serif', fontSize:18, fontWeight:'bold', fill:'green'});
           self.canvas.add(self.moveText);
         }
-        let end = {};
-        end.x = Math.round(event.pointer.x);
-        end.y = Math.round(event.pointer.y);
         
-        self.moveLine.set({'x2':end.x, 'y2':end.y});
+        if (self.moveLine) {
+          self.moveLine.set({'x2':end.x, 'y2':end.y});
+        }
         let textPos = Object.assign({}, end);
         textPos.x += 10;
         textPos.y -= 7;
-        if (self.area.walkPath.isPointInPath(end.x, end.y)) {
-          let path = self.area.findPath(start, end);
-          if (path && path.length) {
-            self.moveText.set({text:path.length.toString(), left:textPos.x, top:textPos.y});
-            if (path.length <= player.remainingMoves) {
-              self.moveLine.set({stroke:'green'});
-              self.moveText.set({fill:'green'});
+        if (self.moveText && self.moveLine) {
+          if (self.area.walkPath.isPointInPath(end.x, end.y)) {
+            let path = self.area.findPath(start, end);
+            if (path && path.length) {
+              console.log('pathl', path.length/4)
+              self.moveText.set({text:Math.ceil(path.length/4).toString(), left:textPos.x, top:textPos.y});
+              if (path.length/4 <= player.remainingMoves) {
+                self.moveLine.set({stroke:'green'});
+                self.moveText.set({fill:'green'});
+              } else {
+                self.moveLine.set({stroke:'red'});
+                self.moveText.set({fill:'red'});
+              }
             } else {
-              self.moveLine.set({stroke:'red'});
-              self.moveText.set({fill:'red'});
+              self.moveLine.set({stroke:'black'});
+              self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'black'});
             }
           } else {
-            self.moveLine.set({stroke:'black'});
-            self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'black'});
+            self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'red'});
           }
-        } else {
-          self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'red'});
         }
         this.renderAll();
       }

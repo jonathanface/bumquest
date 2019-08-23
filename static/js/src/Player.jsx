@@ -139,6 +139,8 @@ export class Player {
     this.height = size.h;
     this.width = size.w;
     
+    //this.y = y + this.height;
+    //this.x = this.x + this.width/2;
   }
 
   
@@ -149,11 +151,14 @@ export class Player {
   getY() {
     return Math.round(this.y);
   }
+
+  updateMovementPointsDisplay(value) {
+    document.querySelector('#movement_points').innerHTML = value;
+  }
   
   animateWalk(path) {
     let self = this;
     if (this.animatingCount < path.length) {
-      
       if (path[this.animatingCount][0] < this.getX()) {
         this.sprite.setElement(this.bumLeft);
       } else if (path[this.animatingCount][0] > this.getX()) {
@@ -165,23 +170,39 @@ export class Player {
       } else {
         this.sprite.setElement(this.bumDefault);
       }
-      
+      for (let i=0; i < this.location.enemies.length; i++) {
+        console.log('eny', this.location.enemies[i].getY(), 'playerY', this.getY());
+        if (this.location.enemies[i].getY() <= this.getY()) {
+          this.sprite.bringToFront();
+        } else {
+          this.sprite.sendToBack();
+        }
+      }
       this.scaleSpriteByYCoord(path[self.animatingCount][1]);
       this.sprite.animate('left', path[this.animatingCount][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
       this.sprite.animate('top', path[this.animatingCount][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas), onComplete: function() {
-        self.animatingCount ++;
-        self.remainingMoves--;
+        self.animatingCount++;
+        if (self.animatingCount%4 === 0) {
+          self.remainingMoves--;
+          self.updateMovementPointsDisplay(self.remainingMoves);
+        }
         self.animateWalk(path);
       }});
     } else {
+      self.remainingMoves--;
+      self.updateMovementPointsDisplay(self.remainingMoves);
       self.x = path[path.length-1][0];
       self.y = path[path.length-1][1];
       this.sprite.setElement(this.bumDefault);
-      this.scaleSpriteByYCoord(path[path.length-1][1]);
+      
       this.sprite.animate('left', path[path.length-1][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
       this.sprite.animate('top', path[path.length-1][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas)});
+      this.scaleSpriteByYCoord(path[path.length-1][1]);
       //
       console.log('done', path[path.length-1][0] - this.width/2, path[path.length-1][1] - this.height);
+      //this.x = Math.round(path[path.length-1][0] + this.width/2);
+      //this.y = Math.round(path[path.length-1][1] + this.height);
+      //console.log(this.x, this.y);
       self.isMoving = false;
     }
   }

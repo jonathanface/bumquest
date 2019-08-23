@@ -29,10 +29,10 @@ export class NPC {
     Luck
     Strength*/
     this.stats.fortitude = 5;
-    this.stats.agility = 3;
+    this.stats.agility = 5;
     this.stats.charisma = 5;
     this.stats.intelligence = 5;
-    this.stats.attention = 3;
+    this.stats.attention = 5;
     this.stats.luck = 5;
     this.stats.strength = 5;
     
@@ -138,7 +138,7 @@ export class NPC {
     return Math.round(this.y);
   }
   
-  animateWalk(path) {
+  animateWalk(path, callback) {
     let self = this;
     if (self.animatingCount < path.length) {
       if (path[self.animatingCount][0] < self.getX()) {
@@ -152,31 +152,52 @@ export class NPC {
       } else {
         self.sprite.setElement(self.npcDefault);
       }
+      if (this.getY() > this.location.getPlayer().getY()) {
+        this.sprite.bringToFront();
+      } else {
+        this.sprite.sendToBack();
+      }
       //console.log('mv', path[self.animatingCount][0] - self.width/2, path[self.animatingCount][1] - self.height);
       self.scaleSpriteByYCoord(path[self.animatingCount][1]);
       self.sprite.animate('left', path[self.animatingCount][0] - self.width/2, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas) });
       self.sprite.animate('top', path[self.animatingCount][1] - self.height, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas), onComplete: function() {
         self.animatingCount++;
-        self.remainingMoves--;
-        self.animateWalk(path);
+        if (self.animatingCount%4 === 0) {
+          self.remainingMoves--;
+          console.log('rem', self.remainingMoves);
+        }
+        self.animateWalk(path, callback);
       }});
     } else {
+      self.remainingMoves--;
       self.x = path[path.length-1][0];
       self.y = path[path.length-1][1];
       self.sprite.setElement(self.npcDefault);
       self.scaleSpriteByYCoord(path[path.length-1][1]);
       self.sprite.animate('left', path[path.length-1][0] - self.width/2, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas) });
       self.sprite.animate('top', path[path.length-1][1] - self.height, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas)});
-      //
       console.log('done', path[path.length-1][0] - self.width/2, path[path.length-1][1] - self.height);
+      
+      //force moves end until I build in combat
+      console.log('callback', callback);
+      if (callback) {
+        callback();
+      }
+      
       self.isMoving = false;
     }
   }
   
-  walkRoute(path) {
+  attack() {
+    console.log('npc attacking!');
+    this.remainingMoves=0;
+  }
+  
+  walkRoute(path, callback) {
+    console.log('walkroute callback', callback);
     this.isMoving = true;
     this.animatingCount = 0;
-    this.animateWalk(path);
+    this.animateWalk(path, callback);
   }
   
 }

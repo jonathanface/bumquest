@@ -27,15 +27,39 @@
 
 .controls .vertical_bar {
   display:inline-block;
-  width:25px;
+  width:100px;
   text-align:center;
+  height: 100%;
+  vertical-align: top;
+  font-size: 0.8rem;
+  line-height: 1.5rem;
+  padding:5px;
+}
+
+.controls .vertical_bar .box {
+    width:100%;
 }
 
 .controls .vertical_bar a {
-  color:white;
+  border: 2px solid #55d7dc;
+  color:#55d7dc;
+  display:block;
   cursor:pointer;
+  margin:3px;
 }
 
 .controls .vertical_bar a:hover {
-  color:yellow;
+  color:#ffe593;
+  border: 2px solid #ffe593;
+}
+
+.controls .center_stats {
+  display: inline-block;
+  vertical-align: top;
+  font-size: 0.9rem;
+  color: #ffe593;
+  padding:5px;
+}
+.controls .center_stats #movement_points {
+  margin-left:5px;
 }

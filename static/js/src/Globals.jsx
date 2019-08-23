@@ -5,7 +5,7 @@ export class Globals {
   static TEMPLATE_DIR = '/templates/';
   static API_DIR = '/api/';
   
-  static GRID_SQUARE_WIDTH = 95;
+  static GRID_SQUARE_WIDTH = 25;
   static GRID_SQUARE_HEIGHT = 25;
   
   static EVENT_PLAYER_READY = 'playerReady';
