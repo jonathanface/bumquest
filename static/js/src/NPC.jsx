@@ -54,6 +54,8 @@ export class NPC {
     this.skills.shittin = 5 + (this.stats.fortitude + this.stats.charisma);
     this.skills.sleepin = 5 + (this.stats.fortitude);
     
+    this.armed = 0;
+    
     this.isMoving = false;
     this.usingMelee = true;
     this.render();
@@ -191,6 +193,32 @@ export class NPC {
   attack() {
     console.log('npc attacking!');
     this.remainingMoves=0;
+    
+    switch(this.weapon) {
+      case 1:
+        //knife
+        break;
+      case 2:
+        //club
+        break;
+      case 3:
+        //pistol
+        break;
+      case 4:
+        //shotgun
+        break;
+      case 5:
+        //rifle
+        break;
+      case 6:
+        //submachinegun
+        break;
+      case 7:
+        //machinegun
+        break;
+      default:
+        //fists
+    }
   }
   
   walkRoute(path, callback) {

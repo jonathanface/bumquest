@@ -189,8 +189,6 @@ export class Player {
         self.animateWalk(path);
       }});
     } else {
-      self.remainingMoves--;
-      self.updateMovementPointsDisplay(self.remainingMoves);
       self.x = path[path.length-1][0];
       self.y = path[path.length-1][1];
       this.sprite.setElement(this.bumDefault);
@@ -204,6 +202,11 @@ export class Player {
       //this.y = Math.round(path[path.length-1][1] + this.height);
       //console.log(this.x, this.y);
       self.isMoving = false;
+      self.remainingMoves--;
+      if (self.remainingMoves < 0) {
+        self.remainingMoves = 0;
+      }
+      self.updateMovementPointsDisplay(self.remainingMoves);
     }
   }
   
