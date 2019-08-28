@@ -9,6 +9,7 @@ export class Area {
     this.parent = parent;
     this.canvas = canvas;
     this.combat = null;
+    this.loaderImg = new Image();
     console.log('init area with id', this.id);
     
     this.walkPoints = [];
@@ -38,7 +39,6 @@ export class Area {
       allowDiagonal: true,
       dontCrossCorners:false
     });
-    this.renderBackground();
   }
   
   renderBackground() {
@@ -140,7 +140,7 @@ export class Area {
         }
       }
     };
-    window.dispatchEvent(new Event(Globals.EVENT_AREA_READY));
+    this.loaderImg.dispatchEvent(new Event(Globals.EVENT_AREA_READY));
   }
   
   getPlayer() {

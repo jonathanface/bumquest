@@ -1,13 +1,13 @@
 package API
 
 import (
-  "database/sql"
-  "net/http"
-  "log"
-  "time"
-  
-  "github.com/dgrijalva/jwt-go"
-  "github.com/denisenkom/go-mssqldb"
+	"database/sql"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/denisenkom/go-mssqldb"
+	"github.com/dgrijalva/jwt-go"
 )
 
 func CreateToken(w http.ResponseWriter, r *http.Request) {
@@ -40,9 +40,8 @@ func CreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	// we have a good payload ~ generate a token
-	var jwtKey = []byte(API_SECRET)
+	var jwtKey = []byte(apiSecret)
 	expirationTime := time.Now().Add(JWT_EXPIRE_TIME)
 	// Create the JWT claims, which includes the username and expiry time
 	type Claims struct {
@@ -65,12 +64,12 @@ func CreateToken(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-  
-  type ApiKey struct {
-    Expires time.Time `json:"expires"`
-    Issued  time.Time `json:"issued"`
-    Token   string    `json:"token"`
-  }
+
+	type ApiKey struct {
+		Expires time.Time `json:"expires"`
+		Issued  time.Time `json:"issued"`
+		Token   string    `json:"token"`
+	}
 	k := ApiKey{}
 	k.Token = tokenString
 	k.Issued = time.Now()

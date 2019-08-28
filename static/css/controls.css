@@ -63,3 +63,12 @@
 .controls .center_stats #movement_points {
   margin-left:5px;
 }
+
+.controls .equipped {
+  max-height: 60px;
+  border: 2px solid white;
+  padding: 4px;
+  border-radius: 4px;
+  margin-top: 5px;
+  cursor:pointer;
+}

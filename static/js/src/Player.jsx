@@ -1,9 +1,10 @@
 import {Globals} from './Globals.jsx'
+import {Weapon} from './Weapon.jsx'
 
 export class Player {
   
   constructor(id, canvas, parent) {
-    this.type = 'player';
+    this.type = Globals.OBJECT_TYPE_PLAYER;
     this.id = id;
     this.parent = parent;
     this.canvas = canvas;
@@ -18,6 +19,7 @@ export class Player {
     this.maxHeight = 0;
     this.maxWidth = 0;
     this.animatingCount = 0;
+    this.bumDefault = new Image();
     
     this.stats = {};
     /*F.A.C.I.A.L.S
@@ -53,12 +55,44 @@ export class Player {
     this.skills.rantin = 5 + (this.stats.intelligence + this.stats.attention);
     this.skills.shittin = 5 + (this.stats.fortitude + this.stats.charisma);
     this.skills.sleepin = 5 + (this.stats.fortitude);
-    
-    
-    
+
     this.isMoving = false;
     
-    this.render();
+    this.inventory = [];
+    
+    let self = this;
+    let fist = new Weapon('b1ae51b1-c9b9-11e9-bc97-0e49f1f8e77c', this.parent);
+    fist.img.addEventListener(Globals.EVENT_WEAPON_READY, function(event) {
+      self.stow(fist);
+      self.equip(fist);
+    });
+    fist.load();
+  }
+  
+  stow(item) {
+    this.inventory.push(item);
+  }
+  
+  drop(item) {
+    if (!this.inventory.includes(item)) {
+      return;
+    }
+    this.inventory.splice(this.inventory.indexOf(item), 1);
+  }
+  
+  equip(item) {
+    if (item.type != Globals.OBJECT_TYPE_WEAPON) {
+      return;
+    }
+    if (!this.inventory.includes(item)) {
+      return;
+    }
+    this.equipped = item;
+    document.querySelector('img.equipped').src = this.equipped.img.src;
+  }
+  
+  getEquippedWeapon() {
+    return this.equipped;
   }
   
   getSmellLabel(smell) {
@@ -72,10 +106,7 @@ export class Player {
   render() {
     console.log('rend');
     let self = this;
-    
-    this.bumDefault = new Image();
     this.bumDefault.onload = function() {
-      console.log('ld');
       self.maxWidth = this.width;
       self.maxHeight = this.height;
       self.height = this.height;
@@ -84,10 +115,11 @@ export class Player {
       self.sprite = new fabric.Image(self.bumDefault, {
         left: self.imgX,
         top: self.imgY,
-        selectable:false
+        selectable:false,
+        hoverCursor:'arrow'
       });
       self.canvas.add(self.sprite);
-      window.dispatchEvent(new Event(Globals.EVENT_PLAYER_READY));
+      this.dispatchEvent(new Event(Globals.EVENT_PLAYER_READY));
     };
     this.bumDefault.src = 'img/people/bum_default.png';
     

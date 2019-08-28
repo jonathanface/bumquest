@@ -5,46 +5,62 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
-	AUTH_ID         = "filthybum"
-	API_SALT        = "bGTUVBJFk6"
-	API_SECRET      = "3Rmton0u8qfp"
-	DB_HOST         = "52.4.79.128"
-	DB_PORT         = "3306"
-	DB_USER         = "jack"
-	DB_PASS         = "h0b0st3w"
-	DB_BUMQUEST     = "bumquest"
 	JWT_EXPIRE_TIME = 8 * time.Hour
 )
 
 var bum_db *sql.DB
-
-//"username:password@tcp(127.0.0.1:3306)/test")
-var dbConnStr = DB_USER + ":" + DB_PASS + "@tcp(" + DB_HOST + ":" + DB_PORT + ")/" + DB_BUMQUEST
+var authID string
+var apiSalt string
+var apiSecret string
 
 func Initialize() {
-	log.Println(dbConnStr)
 	dbConnect()
 }
 
-func GetSecret() string {
-	return API_SECRET
-}
-
 func dbConnect() {
-	var err error
+	jsonFile, err := os.Open("config.json")
+	if err != nil {
+		log.Println(err)
+	}
+	defer jsonFile.Close()
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	type Config struct {
+		AuthID    string `json:"authID"`
+		ApiSalt   string `json:"apiSalt"`
+		ApiSecret string `json:"apiSecret"`
+		DBHost    string `json:"dbHost"`
+		DBPort    string `json:"dbPort"`
+		DBUser    string `json:"dbUser"`
+		DBPass    string `json:"dbPass"`
+		DBName    string `json:"dbName"`
+	}
+	config := Config{}
+	json.Unmarshal(byteValue, &config)
+	authID = config.AuthID
+	apiSalt = config.ApiSalt
+	apiSecret = config.ApiSecret
+	dbConnStr := config.DBUser + ":" + config.DBPass + "@tcp(" + config.DBHost + ":" + config.DBPort + ")/" + config.DBName
+
 	bum_db, err = sql.Open("mysql", dbConnStr)
 	if err != nil {
 		log.Fatal("Error creating connection pool:", err.Error())
 	}
-	log.Println("Connected!\n")
+	log.Println("Connected to db!\n")
+}
+
+func GetSecret() string {
+	return apiSecret
 }
 
 func processConnectionError(db *sql.DB) (context.Context, error) {

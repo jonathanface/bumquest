@@ -15,7 +15,9 @@ body {
 .canvas-container {
   margin:0 auto;
 }
-
+.canvas-container.targeting {
+  cursor:crosshair;
+}
 canvas {
   border:3px solid #333;
   margin:0 auto;

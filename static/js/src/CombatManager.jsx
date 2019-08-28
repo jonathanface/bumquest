@@ -82,7 +82,7 @@ export class CombatManager {
     }
     if (order[this.combatSequence]) {
       order[this.combatSequence].remainingMoves = order[this.combatSequence].stats.speed;
-      if (order[this.combatSequence].type != 'player') {
+      if (order[this.combatSequence].type != Globals.OBJECT_TYPE_PLAYER) {
         this.playerTurn = false;
         console.log('npc turn');
         this.doNPCTurn(order[this.combatSequence]);

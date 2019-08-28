@@ -3,7 +3,7 @@ import {Globals} from './Globals.jsx'
 export class NPC {
   
   constructor(id, canvas, parent) {
-    this.type = 'npc';
+    this.type = Globals.OBJECT_TYPE_NPC;
     this.id = id;
     this.parent = parent;
     this.canvas = canvas;
@@ -18,6 +18,7 @@ export class NPC {
     this.maxHeight = 0;
     this.maxWidth = 0;
     this.animatingCount = 0;
+    this.npcDefault = new Image();
     
     this.stats = {};
     /*F.A.C.I.A.L.S
@@ -58,13 +59,11 @@ export class NPC {
     
     this.isMoving = false;
     this.usingMelee = true;
-    this.render();
   }
   
   render() {
     let self = this;
     
-    this.npcDefault = new Image();
     this.npcDefault.onload = function() {
       self.maxWidth = this.width;
       self.maxHeight = this.height;
@@ -74,10 +73,11 @@ export class NPC {
       self.sprite = new fabric.Image(self.npcDefault, {
         left: self.imgX,
         top: self.imgY,
-        selectable:false
+        selectable:false,
+        hoverCursor:'arrow'
       });
       self.canvas.add(self.sprite);
-      window.dispatchEvent(new Event(Globals.EVENT_NPC_READY));
+      this.dispatchEvent(new Event(Globals.EVENT_NPC_READY));
     };
     this.npcDefault.src = 'img/people/generic_enemy.png';
     

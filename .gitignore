@@ -7,3 +7,4 @@ static/accounts/*
 *.obj
 *.mtl
 *.babylon
+config.json

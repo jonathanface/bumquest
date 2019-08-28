@@ -11,6 +11,11 @@ export class Globals {
   static EVENT_PLAYER_READY = 'playerReady';
   static EVENT_AREA_READY = 'areaReady';
   static EVENT_NPC_READY = 'npcReady';
+  static EVENT_WEAPON_READY = 'weaponReady';
+  
+  static OBJECT_TYPE_PLAYER = 1;
+  static OBJECT_TYPE_NPC = 2;
+  static OBJECT_TYPE_WEAPON = 3;
   
   apiKey = null;
   isShowingSheet = false;

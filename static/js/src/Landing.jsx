@@ -19,31 +19,35 @@ export class Landing extends React.Component {
     console.log('landing loaded');
     let self = this;
     let canvas = new fabric.Canvas('c');
-    window.addEventListener(Globals.EVENT_PLAYER_READY, async function(event) {
+    this.state.player = new Player(0, canvas, this);
+    this.state.player.bumDefault.addEventListener(Globals.EVENT_PLAYER_READY, async function(event) {
       let dbInfo = await self.queryDB('GET', Globals.API_DIR + 'area/' + '29c94708-c44c-11e9-bc97-0e49f1f8e77c');
       if (dbInfo) {
-        window.addEventListener(Globals.EVENT_AREA_READY, function(event) {
-          window.addEventListener(Globals.EVENT_NPC_READY, function(event) {
+        self.state.currentLocation = dbInfo.id;
+        self.state.currentArea = new Area(self.state.currentLocation, canvas, self);
+        self.state.currentArea.loaderImg.addEventListener(Globals.EVENT_AREA_READY, function(event) {
+          let npc = new NPC(0, canvas, this);
+          npc.npcDefault.addEventListener(Globals.EVENT_NPC_READY, function(event) {
             npc.location = self.state.currentArea;
             npc.resample();
             npc.location.enemies.push(npc);
             self.print('Some asshole is here!');
             self.state.currentArea.enterCombat();
           });
-          let npc = new NPC(0, canvas, this);
+          npc.render();
+          
+          self.state.player.location = self.state.currentArea;
+          self.state.player.resample();
         });
-        self.state.currentLocation = dbInfo.id;
+        self.state.currentArea.renderBackground();
         self.print(dbInfo.description);
         self.print('You enter <b>' + dbInfo.name.toLowerCase() + '</b>.');
-        self.state.currentArea = new Area(self.state.currentLocation, canvas, self);
+        
       }
       
-      
-      self.state.player.location = self.state.currentArea;
-      self.state.player.resample();
-      
     });
-    this.state.player = new Player(0, canvas, this);
+    this.state.player.render();
+    
   }
   
   endCombatTurn() {
@@ -135,6 +139,13 @@ export class Landing extends React.Component {
     }
   }
   
+  enterTargetingMode() {
+    console.log('tg', document.querySelector('.canvas-container'));
+    for (let i=0; i < this.state.currentArea.enemies.length; i++) {
+      this.state.currentArea.enemies[i].sprite.hoverCursor='crosshair';
+    }
+  }
+  
   render() {
     return (
       <div>
@@ -149,6 +160,11 @@ export class Landing extends React.Component {
           <div className="center_stats">
             <label htmlFor="movement_points">Movement Points:</label>
             <span id="movement_points"></span>
+            <div className="weaponBox">
+              <a>
+                <img className="equipped" onClick={this.enterTargetingMode.bind(this)}/>
+              </a>
+            </div>
           </div>
         </div>
       </div>

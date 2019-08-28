@@ -44,40 +44,40 @@ func validationMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		next(w, r)
 		/*
-		    authorizationHeader := r.Header.Get("Authorization")
-				if authorizationHeader != "" {
-					bearerToken := strings.Split(authorizationHeader, " ")
-					if len(bearerToken) == 2 {
-						token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
-							if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-								API.RespondWithError(w, http.StatusBadRequest, "Error parsing token")
-							}
-							return []byte(API.GetSecret()), nil
-						})
-						switch err.(type) {
-						case nil:
-							if token.Valid {
-								next(w, r)
-							} else {
-								API.RespondWithError(w, http.StatusUnauthorized, "Invalid authorization token")
-								return
-							}
-						case *jwt.ValidationError: // something was wrong during the validation
-							vErr := err.(*jwt.ValidationError)
-							switch vErr.Errors {
-							case jwt.ValidationErrorExpired:
-								API.RespondWithError(w, http.StatusUnauthorized, "Token expired")
-								return
-							default:
-								API.RespondWithError(w, http.StatusBadRequest, "Error parsing token")
-								return
+			    authorizationHeader := r.Header.Get("Authorization")
+					if authorizationHeader != "" {
+						bearerToken := strings.Split(authorizationHeader, " ")
+						if len(bearerToken) == 2 {
+							token, err := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+								if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+									API.RespondWithError(w, http.StatusBadRequest, "Error parsing token")
+								}
+								return []byte(API.GetSecret()), nil
+							})
+							switch err.(type) {
+							case nil:
+								if token.Valid {
+									next(w, r)
+								} else {
+									API.RespondWithError(w, http.StatusUnauthorized, "Invalid authorization token")
+									return
+								}
+							case *jwt.ValidationError: // something was wrong during the validation
+								vErr := err.(*jwt.ValidationError)
+								switch vErr.Errors {
+								case jwt.ValidationErrorExpired:
+									API.RespondWithError(w, http.StatusUnauthorized, "Token expired")
+									return
+								default:
+									API.RespondWithError(w, http.StatusBadRequest, "Error parsing token")
+									return
+								}
 							}
 						}
-					}
-				} else {
-					API.RespondWithError(w, http.StatusBadRequest, "An authorization header is required")
-					return
-				}*/
+					} else {
+						API.RespondWithError(w, http.StatusBadRequest, "An authorization header is required")
+						return
+					}*/
 	})
 }
 
@@ -87,6 +87,7 @@ func main() {
 	rtr := mux.NewRouter()
 
 	rtr.HandleFunc(API_PREFIX+"/area/{areaid:[0-9a-zA-Z-]+}", validationMiddleware(API.FetchArea)).Methods("GET", "OPTIONS")
+	rtr.HandleFunc(API_PREFIX+"/weapon/{weaponid:[0-9a-zA-Z-]+}", validationMiddleware(API.FetchWeapon)).Methods("GET", "OPTIONS")
 	rtr.HandleFunc(API_PREFIX+"/account/{accountid:[0-9a-zA-Z-]+}", validationMiddleware(API.FetchAccount)).Methods("GET", "OPTIONS")
 	rtr.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
