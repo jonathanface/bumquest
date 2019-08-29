@@ -3,7 +3,7 @@ import {Globals} from './Globals.jsx'
 export class CombatManager {
   
   
-  constructor(player, area) {
+  constructor(player, area, initiated) {
     this.area = area;
     this.player = player;
     this.enemies = area.enemies;
@@ -18,6 +18,54 @@ export class CombatManager {
     this.updateMovementPointsDisplay(this.player.remainingMoves);
     
     this.nextTurn();
+  }
+  
+  handlePlayerAttack(enemy) {
+    if (!this.player) {
+      return;
+    }
+    if (!this.player.equipped) {
+      return;
+    }
+    if (this.player.equipped.type != Globals.OBJECT_TYPE_WEAPON) {
+      return;
+    }
+    /*
+    let attackResult = await this.queryBackend('GET', Globals.API_DIR + 'attack/' + this.state.player.id + '/' + enemy.id);
+    if (attackResult) {
+    }*/
+    //89% (attacker's weapon skill) - 5% (defender's Armor Class) = 84%
+    let toHit = this.player.skills.shootin;
+    if (this.player.equipped.melee) {
+      toHit = this.player.skills.scrappin;
+    }
+    let hitChance = toHit - enemy.stats.ac + Math.ceil(this.player.stats.luck/2);
+    let roll = Globals.randomInt(1, 100);
+    if (roll <= hitChance) {
+      let damArr = this.player.equipped.damage.split('d');
+      let damage = 0;
+      for (let i=0; i < damArr[0]; i++) {
+        damage += Globals.randomInt(1, damArr[1]);
+      }
+      let crit = Globals.randomInt(1, 100);
+      if (crit <= this.player.stats.critical) {
+        this.area.parent.print('You critically hit ' + Globals.ucwords(enemy.name) + ' for ' + damage*Globals.CRITICAL_DAMAGE_MODIFIER + ' points of damage.');
+      } else {
+        this.area.parent.print('You hit ' + Globals.ucwords(enemy.name) + ' for ' + damage + ' points of damage.');
+      }
+    } else {
+      let critFail = Globals.randomInt(1, 100);
+      if (critFail <= Globals.CRITICAL_FAILURE_CHANCE) {
+        let saveRoll = Globals.randomInt(1, 100);
+        if (saveRoll >= this.state.player.luck) {
+          this.area.parent.print('You critically missed and lost your next turn.');
+        } else {
+          this.area.parent.print('You missed.');
+        }
+      } else {
+        this.area.parent.print('You missed.');
+      }
+    }
   }
   
   checkRemainingNPCMoves(npc) {
@@ -97,13 +145,35 @@ export class CombatManager {
     }
   }
   
+  getNPCByID(id) {
+    for (let i=0; i < this.enemies.length; i++) {
+      if (this.enemies[i].id == id) {
+        return this.enemies[i];
+      }
+    }
+    return null;
+  }
+  
   determineCombatOrder() {
     let order = [];
-    this.enemies.sort((a, b) => (a.stats.speed > b.stats.speed) ? 1 : -1);
     let playerAdded = false;
-    for (let i=0; i < this.enemies.length; i++) {
-      if (this.enemies[i].stats.speed > this.player.stats.speed) {
-        order.push(this.enemies[i]);
+    let npcCombatants = [];
+    if (this.initiated == 'player') {
+      //order.push(this.player);
+      playerAdded = true;
+      npcCombatants = this.enemies;
+    } else {
+      //order.push(this.getNPCByID(this.initiated));
+      for (let i=0; i < this.enemies.length; i++) {
+        if (this.enemies[i].id != this.initiated) {
+          npcCombatants.push(this.enemies[i]);
+        }
+      }
+    }
+    npcCombatants.sort((a, b) => (a.stats.speed > b.stats.speed) ? 1 : -1);
+    for (let i=0; i < npcCombatants.length; i++) {
+      if (npcCombatants[i].stats.speed > this.player.stats.speed) {
+        order.push(npcCombatants[i]);
         if (i == this.enemies.length-1 && !playerAdded) {
           order.push(this.player);
         }
@@ -112,7 +182,7 @@ export class CombatManager {
           order.push(this.player);
           playerAdded = true;
         }
-        order.push(this.enemies[i]);
+        order.push(npcCombatants[i]);
       }
     }
     return order;

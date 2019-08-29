@@ -33,6 +33,7 @@ export class Area {
     this.walkPath;
     
     this.combatOn = false;
+    this.targetOn = false;
     
     this.grid = null;
     this.pathfinder = new PF.DijkstraFinder({
@@ -128,7 +129,7 @@ export class Area {
             self.canvas.remove(self.combat.moveText);
             self.combat.moveText = null;
             
-            if (self.getPlayer().isMoving || path.length/4 > self.getPlayer().remainingMoves) {
+            if (self.getPlayer().isMoving || path.length/4 > self.getPlayer().remainingMoves || self.targetOn) {
               return;
             }
           }
@@ -151,12 +152,20 @@ export class Area {
     this.combat.endPlayerTurn();
   }
   
-  enterCombat() {
+  enterCombat(initiated) {
     let self = this;
     let player = this.getPlayer();
     if (player) {
       this.combatOn = true;
-      this.combat = new CombatManager(player, this);
+      this.combat = new CombatManager(player, this, initiated);
+      
+    }
+  }
+  
+  exitCombat() {
+    this.combatOn = false;
+    for (let i=0; i < this.enemies.length; i++) {
+      this.enemies[i].sprite.hoverCursor='arrow';
     }
   }
 }

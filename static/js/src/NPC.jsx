@@ -5,6 +5,7 @@ export class NPC {
   constructor(id, canvas, parent) {
     this.type = Globals.OBJECT_TYPE_NPC;
     this.id = id;
+    this.name = 'some asshole';
     this.parent = parent;
     this.canvas = canvas;
     this.location = null;
@@ -41,6 +42,8 @@ export class NPC {
     this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2);
     this.stats.tolerance = this.stats.fortitude*5;
     this.stats.smell = Math.round(this.stats.charisma/2);
+    this.stats.hp = 50 + this.stats.fortitude;
+    this.stats.ac = 5 + Math.round(this.stats.agility/2 + this.stats.fortitude/2);
     
     this.remainingMoves = this.stats.speed;
     
@@ -77,8 +80,13 @@ export class NPC {
         hoverCursor:'arrow'
       });
       self.canvas.add(self.sprite);
+      self.sprite.on('mouseup', function() {
+        self.parent.state.currentArea.enterCombat('player');
+        self.parent.state.currentArea.combat.handlePlayerAttack(self);
+      });
       this.dispatchEvent(new Event(Globals.EVENT_NPC_READY));
     };
+    
     this.npcDefault.src = 'img/people/generic_enemy.png';
     
     this.npcLeft = new Image();

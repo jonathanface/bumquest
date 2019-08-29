@@ -17,7 +17,7 @@ export class Weapon {
   
   async load() {
     let self = this;
-    let weaponInfo = await this.parent.queryDB('GET', Globals.API_DIR + 'weapon/' + this.id);
+    let weaponInfo = await this.parent.queryBackend('GET', Globals.API_DIR + 'weapon/' + this.id);
     if (weaponInfo) {
       console.log('weap', weaponInfo);
       self.damage = weaponInfo.damage;

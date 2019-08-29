@@ -21,18 +21,17 @@ export class Landing extends React.Component {
     let canvas = new fabric.Canvas('c');
     this.state.player = new Player(0, canvas, this);
     this.state.player.bumDefault.addEventListener(Globals.EVENT_PLAYER_READY, async function(event) {
-      let dbInfo = await self.queryDB('GET', Globals.API_DIR + 'area/' + '29c94708-c44c-11e9-bc97-0e49f1f8e77c');
+      let dbInfo = await self.queryBackend('GET', Globals.API_DIR + 'area/' + '29c94708-c44c-11e9-bc97-0e49f1f8e77c');
       if (dbInfo) {
         self.state.currentLocation = dbInfo.id;
         self.state.currentArea = new Area(self.state.currentLocation, canvas, self);
         self.state.currentArea.loaderImg.addEventListener(Globals.EVENT_AREA_READY, function(event) {
-          let npc = new NPC(0, canvas, this);
+          let npc = new NPC(0, canvas, self);
           npc.npcDefault.addEventListener(Globals.EVENT_NPC_READY, function(event) {
             npc.location = self.state.currentArea;
             npc.resample();
             npc.location.enemies.push(npc);
             self.print('Some asshole is here!');
-            self.state.currentArea.enterCombat();
           });
           npc.render();
           
@@ -59,7 +58,7 @@ export class Landing extends React.Component {
     document.querySelector('.console').innerHTML = '<p>' + text + '</p>' + currText;
   }
   
-  queryDB(type, url) {
+  queryBackend(type, url) {
     return new Promise(function(resolve, reject) {
       let xhr = new XMLHttpRequest();
       xhr.open(type, url, true);
@@ -141,8 +140,16 @@ export class Landing extends React.Component {
   
   enterTargetingMode() {
     console.log('tg', document.querySelector('.canvas-container'));
-    for (let i=0; i < this.state.currentArea.enemies.length; i++) {
-      this.state.currentArea.enemies[i].sprite.hoverCursor='crosshair';
+    if (!this.state.currentArea.targetOn) {
+      this.state.currentArea.targetOn = true;
+      for (let i=0; i < this.state.currentArea.enemies.length; i++) {
+        this.state.currentArea.enemies[i].sprite.hoverCursor='crosshair';
+      }
+    } else {
+      this.state.currentArea.targetOn = false;
+      for (let i=0; i < this.state.currentArea.enemies.length; i++) {
+        this.state.currentArea.enemies[i].sprite.hoverCursor='arrow';
+      }
     }
   }
   

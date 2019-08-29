@@ -17,6 +17,9 @@ export class Globals {
   static OBJECT_TYPE_NPC = 2;
   static OBJECT_TYPE_WEAPON = 3;
   
+  static CRITICAL_FAILURE_CHANCE = 10;
+  static CRITICAL_DAMAGE_MODIFIER = 10;
+  
   apiKey = null;
   isShowingSheet = false;
   
@@ -45,7 +48,13 @@ export class Globals {
     });
   };
   
-  static random(min, max) {
+  static randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+  
+  static ucwords(str) {
+    return (str + '').replace(/^(.)|\s+(.)/g, function ($1) {
+      return $1.toUpperCase()
+    });
   }
 }

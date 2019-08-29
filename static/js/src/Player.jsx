@@ -42,13 +42,16 @@ export class Player {
     this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2);
     this.stats.tolerance = this.stats.fortitude*5;
     this.stats.smell = Math.round(this.stats.charisma/2);
+    this.stats.hp = 50 + this.stats.fortitude;
+    this.stats.ac = 5 + Math.round(this.stats.agility/2 + this.stats.fortitude/2);
+    this.stats.critical = this.stats.luck;
     
     this.remainingMoves = this.stats.speed;
     
     this.skills = {};
     this.skills.beggin = 5 + (this.stats.charisma + this.stats.attention);
     this.skills.shootin = 5 + (this.stats.attention);
-    this.skills.scrappin = 5 + (this.stats.strength + this.stats.attention);
+    this.skills.scrappin = 50 + (this.stats.strength + this.stats.attention);
     this.skills.wrappin = 5 + (this.stats.attention + this.stats.intelligence);
     this.skills.fixin = 5 + (this.stats.intelligence + this.stats.agility);
     this.skills.learnin = 5 + (this.stats.intelligence);
