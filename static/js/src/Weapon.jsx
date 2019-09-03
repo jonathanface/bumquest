@@ -11,7 +11,8 @@ export class Weapon {
     this.icon_url = '';
     this.melee = true;
     this.name = 'weapon';
-    this.speed = 5;
+    this.speed = 1;
+    this.range = 1;
     this.img = new Image();
   }
   

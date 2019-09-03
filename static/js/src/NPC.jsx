@@ -1,4 +1,5 @@
 import {Globals} from './Globals.jsx'
+import {Weapon} from './Weapon.jsx'
 
 export class NPC {
   
@@ -58,10 +59,45 @@ export class NPC {
     this.skills.shittin = 5 + (this.stats.fortitude + this.stats.charisma);
     this.skills.sleepin = 5 + (this.stats.fortitude);
     
-    this.armed = 0;
-    
+    this.team = 3;
+    this.targetAcquired = null;
     this.isMoving = false;
     this.usingMelee = true;
+    this.inventory = [];
+    
+    let self = this;
+    let fist = new Weapon('b1ae51b1-c9b9-11e9-bc97-0e49f1f8e77c', this.parent);
+    fist.img.addEventListener(Globals.EVENT_WEAPON_READY, function(event) {
+      self.stow(fist);
+      self.equip(fist);
+    });
+    fist.load();
+  }
+  
+  stow(item) {
+    this.inventory.push(item);
+  }
+  
+  drop(item) {
+    if (!this.inventory.includes(item)) {
+      return;
+    }
+    this.inventory.splice(this.inventory.indexOf(item), 1);
+  }
+  
+  equip(item) {
+    if (item.type != Globals.OBJECT_TYPE_WEAPON) {
+      return;
+    }
+    if (!this.inventory.includes(item)) {
+      return;
+    }
+    this.equipped = item;
+    //document.querySelector('img.equipped').src = this.equipped.img.src;
+  }
+  
+  getEquippedWeapon() {
+    return this.equipped;
   }
   
   render() {
@@ -80,8 +116,31 @@ export class NPC {
         hoverCursor:'arrow'
       });
       self.canvas.add(self.sprite);
+      self.sprite.on('mouseover', function() {
+        if (self.parent.state.currentArea.combatOn || self.parent.state.currentArea.getPlayer().isTargeting) {
+          self.parent.state.currentArea.getPlayer().targetAcquired = this;
+          this.hoverCursor='crosshair';
+        }
+      });
+      self.sprite.on('mouseout', function() {
+        console.log('out');
+        self.parent.state.currentArea.getPlayer().targetAcquired = null;
+        this.hoverCursor='arrow';
+      });
       self.sprite.on('mouseup', function() {
-        self.parent.state.currentArea.enterCombat('player');
+        let enemyPos = {'x':self.getX(), 'y':self.getY()};
+        let path = self.parent.state.currentArea.findPath({'x':self.parent.state.currentArea.getPlayer().getX(),
+                                                           'y':self.parent.state.currentArea.getPlayer().getY()}, enemyPos);
+        if (path) {
+          path = path.splice(0, path.length-1);
+        }
+        if (Math.ceil(path.length/4) > self.parent.state.currentArea.getPlayer().equipped.range) {
+          self.parent.print("You're out of range.");
+          return;
+        }
+        if (!self.parent.state.currentArea.combatOn) {
+          self.parent.state.currentArea.enterCombat('player');
+        }
         self.parent.state.currentArea.combat.handlePlayerAttack(self);
       });
       this.dispatchEvent(new Event(Globals.EVENT_NPC_READY));
@@ -195,37 +254,6 @@ export class NPC {
       }
       
       self.isMoving = false;
-    }
-  }
-  
-  attack() {
-    console.log('npc attacking!');
-    this.remainingMoves=0;
-    
-    switch(this.weapon) {
-      case 1:
-        //knife
-        break;
-      case 2:
-        //club
-        break;
-      case 3:
-        //pistol
-        break;
-      case 4:
-        //shotgun
-        break;
-      case 5:
-        //rifle
-        break;
-      case 6:
-        //submachinegun
-        break;
-      case 7:
-        //machinegun
-        break;
-      default:
-        //fists
     }
   }
   

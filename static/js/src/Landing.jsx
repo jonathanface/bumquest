@@ -26,11 +26,12 @@ export class Landing extends React.Component {
         self.state.currentLocation = dbInfo.id;
         self.state.currentArea = new Area(self.state.currentLocation, canvas, self);
         self.state.currentArea.loaderImg.addEventListener(Globals.EVENT_AREA_READY, function(event) {
+          self.state.currentArea.actors.push(self.state.player);
           let npc = new NPC(0, canvas, self);
           npc.npcDefault.addEventListener(Globals.EVENT_NPC_READY, function(event) {
             npc.location = self.state.currentArea;
             npc.resample();
-            npc.location.enemies.push(npc);
+            npc.location.actors.push(npc);
             self.print('Some asshole is here!');
           });
           npc.render();
@@ -139,18 +140,7 @@ export class Landing extends React.Component {
   }
   
   enterTargetingMode() {
-    console.log('tg', document.querySelector('.canvas-container'));
-    if (!this.state.currentArea.targetOn) {
-      this.state.currentArea.targetOn = true;
-      for (let i=0; i < this.state.currentArea.enemies.length; i++) {
-        this.state.currentArea.enemies[i].sprite.hoverCursor='crosshair';
-      }
-    } else {
-      this.state.currentArea.targetOn = false;
-      for (let i=0; i < this.state.currentArea.enemies.length; i++) {
-        this.state.currentArea.enemies[i].sprite.hoverCursor='arrow';
-      }
-    }
+    this.state.currentArea.getPlayer().isTargeting = !this.state.currentArea.getPlayer().isTargeting;
   }
   
   render() {

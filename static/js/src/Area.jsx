@@ -23,7 +23,7 @@ export class Area {
     this.walkPoints.push({x:0, y:767});
     this.walkPoints.push({x:0, y:673});
     
-    this.enemies = [];
+    this.actors = [];
     
     //398px / 30 feet = 13.3
     this.height = 768;
@@ -33,7 +33,6 @@ export class Area {
     this.walkPath;
     
     this.combatOn = false;
-    this.targetOn = false;
     
     this.grid = null;
     this.pathfinder = new PF.DijkstraFinder({
@@ -112,6 +111,9 @@ export class Area {
     this.walkPath.save();
     this.generateWalkGrid();
     this.walkPath.canvas.onclick = function(event) {
+      if (self.getPlayer().targetAcquired) {
+        return;
+      }
       let bounds = self.walkPath.canvas.getBoundingClientRect();
       let start = {};
       start.x = self.parent.state.player.getX();
@@ -129,7 +131,7 @@ export class Area {
             self.canvas.remove(self.combat.moveText);
             self.combat.moveText = null;
             
-            if (self.getPlayer().isMoving || path.length/4 > self.getPlayer().remainingMoves || self.targetOn) {
+            if (self.getPlayer().isMoving || Math.ceil(path.length/4) > self.getPlayer().remainingMoves) {
               return;
             }
           }
@@ -155,6 +157,7 @@ export class Area {
   enterCombat(initiated) {
     let self = this;
     let player = this.getPlayer();
+    console.log('starting combat', player);
     if (player) {
       this.combatOn = true;
       this.combat = new CombatManager(player, this, initiated);
@@ -164,8 +167,5 @@ export class Area {
   
   exitCombat() {
     this.combatOn = false;
-    for (let i=0; i < this.enemies.length; i++) {
-      this.enemies[i].sprite.hoverCursor='arrow';
-    }
   }
 }

@@ -9,6 +9,7 @@ export class Player {
     this.parent = parent;
     this.canvas = canvas;
     this.location = null;
+    this.name = 'you';
 
     this.x = 0;
     this.y = 0;
@@ -60,8 +61,11 @@ export class Player {
     this.skills.sleepin = 5 + (this.stats.fortitude);
 
     this.isMoving = false;
+    this.isTargeting = false;
+    this.targetAcquired = null;
     
     this.inventory = [];
+    this.team = 1;
     
     let self = this;
     let fist = new Weapon('b1ae51b1-c9b9-11e9-bc97-0e49f1f8e77c', this.parent);
@@ -205,9 +209,8 @@ export class Player {
       } else {
         this.sprite.setElement(this.bumDefault);
       }
-      for (let i=0; i < this.location.enemies.length; i++) {
-        console.log('eny', this.location.enemies[i].getY(), 'playerY', this.getY());
-        if (this.location.enemies[i].getY() <= this.getY()) {
+      for (let i=0; i < this.location.actors.length; i++) {
+        if (this.location.actors[i].getY() <= this.getY()) {
           this.sprite.bringToFront();
         } else {
           this.sprite.sendToBack();
@@ -217,7 +220,7 @@ export class Player {
       this.sprite.animate('left', path[this.animatingCount][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
       this.sprite.animate('top', path[this.animatingCount][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas), onComplete: function() {
         self.animatingCount++;
-        if (self.animatingCount%4 === 0) {
+        if (self.animatingCount%4 === 0 && self.parent.state.currentArea.combatOn) {
           self.remainingMoves--;
           self.updateMovementPointsDisplay(self.remainingMoves);
         }
@@ -237,11 +240,13 @@ export class Player {
       //this.y = Math.round(path[path.length-1][1] + this.height);
       //console.log(this.x, this.y);
       self.isMoving = false;
-      self.remainingMoves--;
-      if (self.remainingMoves < 0) {
-        self.remainingMoves = 0;
+      if (self.parent.state.currentArea.combatOn) {
+        self.remainingMoves--;
+        if (self.remainingMoves < 0) {
+          self.remainingMoves = 0;
+        }
+        self.updateMovementPointsDisplay(self.remainingMoves);
       }
-      self.updateMovementPointsDisplay(self.remainingMoves);
     }
   }
   
