@@ -25,29 +25,110 @@ export class Landing extends React.Component {
       if (dbInfo) {
         self.state.currentLocation = dbInfo.id;
         self.state.currentArea = new Area(self.state.currentLocation, canvas, self);
-        self.state.currentArea.loaderImg.addEventListener(Globals.EVENT_AREA_READY, function(event) {
+        self.state.currentArea.loaderImg.addEventListener(Globals.EVENT_AREA_READY, async function(event) {
           self.state.currentArea.actors.push(self.state.player);
-          let npc = new NPC(0, canvas, self);
-          npc.npcDefault.addEventListener(Globals.EVENT_NPC_READY, function(event) {
-            npc.location = self.state.currentArea;
-            npc.resample();
-            npc.location.actors.push(npc);
-            self.print('Some asshole is here!');
-          });
-          npc.render();
-          
           self.state.player.location = self.state.currentArea;
           self.state.player.resample();
+          
+          let npcInfo = await self.queryBackend('GET', Globals.API_DIR + 'area/' + self.state.currentArea.id + '/npcs');
+          if (npcInfo) {
+            console.log(npcInfo);
+            for (let i=0; i < npcInfo.length; i++) {
+              let npc = new NPC(npcInfo[i].id, canvas, self);
+              npc.name = npcInfo[i].name;
+              npc.description = npcInfo[i].descr;
+              npc.team = npcInfo[i].team;
+              npc.imgX = npcInfo[i].x;
+              npc.imgY = npcInfo[i].y;
+              npc.npcDefault.addEventListener(Globals.EVENT_NPC_READY, function(event) {
+                npc.location = self.state.currentArea;
+                
+                self.state.currentArea.actors.push(npc);
+                npc.resample();
+                self.print('Some asshole is here!');
+              });
+              npc.render();
+            }
+          }
+          
+          
+          
+          document.querySelector('.upper-canvas').oncontextmenu = function(event) {
+            
+            event.preventDefault();
+            let objectFound = false;
+            let clickPoint = new fabric.Point(event.offsetX, event.offsetY);
+            canvas.forEachObject(function (obj) {
+              console.log(obj);
+              if (!objectFound && obj.containsPoint(clickPoint)) {
+                objectFound = true;
+                self.renderRightClickOptions(event,obj);
+              }
+            });
+          };
+          
         });
         self.state.currentArea.renderBackground();
-        self.print(dbInfo.description);
+        
         self.print('You enter <b>' + dbInfo.name.toLowerCase() + '</b>.');
+        self.print(dbInfo.description);
         
       }
       
     });
     this.state.player.render();
+  }
+  
+  renderRightClickOptions(mouseinfo, element) {
+    let self = this;
+    let menuTimeout = 2000;
+    this.removeAllContextMenus();
+    console.log('obj', element);
+    let div = document.createElement('div');
+    div.oncontextmenu = function(e) { e.preventDefault(); return false; };
+    div.classList.add('contextMenu');
+    console.log('l',  document.querySelector('.canvas-container').offsetLeft);
+    div.style.left = (mouseinfo.offsetX + document.querySelector('.canvas-container').offsetLeft) + 'px';
+    div.style.top = mouseinfo.offsetY + 'px';
+    let ul = document.createElement('ul');
+    let li = document.createElement('li');
+    li.appendChild(document.createTextNode(Globals.ucwords(element.metadata.name)));
+    ul.appendChild(li);
+    li = document.createElement('li');
+    li.appendChild(document.createTextNode('View'));
+    li.oncontextmenu = function() { return false; };
+    li.onclick = function() {
+      self.print('You see: ' + Globals.ucwords(element.metadata.name) + '.');
+      self.print(Globals.upperFirstChar(element.metadata.description) + '.');
+      self.removeAllContextMenus();
+    };
+    ul.appendChild(li);
     
+    div.appendChild(ul);
+    document.body.appendChild(div);
+    let timer = setTimeout(function() {
+      if (div && div.parentNode) {
+        div.parentNode.removeChild(div);
+      }
+    }, menuTimeout);
+    div.onmouseover = function() {
+      clearTimeout(timer);
+    };
+    div.onmouseout = function() {
+      clearTimeout(timer);
+      timer = setTimeout(function() {
+        if (div && div.parentNode) {
+          div.parentNode.removeChild(div);
+        }
+      }, menuTimeout);
+    }
+  }
+  
+  removeAllContextMenus() {
+    let menus = document.querySelectorAll('.contextMenu');
+    for (let i=0; i < menus.length; i++) {
+      menus[i].parentNode.removeChild(menus[i]);
+    }
   }
   
   endCombatTurn() {
@@ -55,8 +136,11 @@ export class Landing extends React.Component {
   }
   
   print(text) {
-    let currText = document.querySelector('.console').innerHTML;
-    document.querySelector('.console').innerHTML = '<p>' + text + '</p>' + currText;
+    let div = document.querySelector('.console');
+    div.innerHTML += '<p>' + text + '</p>';
+    div.innerHTML += '<p></p>';
+    div.scrollTop = div.scrollHeight;
+    
   }
   
   queryBackend(type, url) {

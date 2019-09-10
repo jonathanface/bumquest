@@ -52,9 +52,21 @@ export class Globals {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
   
+  static upperFirstChar(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+  
   static ucwords(str) {
     return (str + '').replace(/^(.)|\s+(.)/g, function ($1) {
       return $1.toUpperCase()
     });
+  }
+  
+  static distanceBetween(point1, point2, area) {
+    let path = area.findPath(point1, point2);
+    if (path) {
+      path = path.splice(0, path.length-1);
+    }
+    return Math.ceil(path.length/4);
   }
 }

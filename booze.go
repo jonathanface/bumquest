@@ -87,6 +87,7 @@ func main() {
 	rtr := mux.NewRouter()
 
 	rtr.HandleFunc(API_PREFIX+"/area/{areaid:[0-9a-zA-Z-]+}", validationMiddleware(API.FetchArea)).Methods("GET", "OPTIONS")
+	rtr.HandleFunc(API_PREFIX+"/area/{areaid:[0-9a-zA-Z-]+}/npcs", validationMiddleware(API.FetchAreaNPCs)).Methods("GET", "OPTIONS")
 	rtr.HandleFunc(API_PREFIX+"/weapon/{weaponid:[0-9a-zA-Z-]+}", validationMiddleware(API.FetchWeapon)).Methods("GET", "OPTIONS")
 	rtr.HandleFunc(API_PREFIX+"/account/{accountid:[0-9a-zA-Z-]+}", validationMiddleware(API.FetchAccount)).Methods("GET", "OPTIONS")
 	rtr.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))

@@ -10,6 +10,7 @@ export class Player {
     this.canvas = canvas;
     this.location = null;
     this.name = 'you';
+    this.description = "you've seen better days, for sure";
 
     this.x = 0;
     this.y = 0;
@@ -125,6 +126,8 @@ export class Player {
         selectable:false,
         hoverCursor:'arrow'
       });
+      self.sprite.metadata = {};
+      self.sprite.metadata = self;
       self.canvas.add(self.sprite);
       this.dispatchEvent(new Event(Globals.EVENT_PLAYER_READY));
     };
@@ -138,6 +141,9 @@ export class Player {
     
     this.bumUp = new Image();
     this.bumUp.src = 'img/people/bum_backwards.png';
+    
+    this.bumAnim_walkRight = new Image();
+    this.bumAnim_walkRight.src = 'img/animations/bum_anim_walk_right.png';
   }
   
   resample() {
@@ -195,13 +201,21 @@ export class Player {
     document.querySelector('#movement_points').innerHTML = value;
   }
   
+  animatePng(sprite, src) {
+    
+  }
+  
   animateWalk(path) {
     let self = this;
     if (this.animatingCount < path.length) {
       if (path[this.animatingCount][0] < this.getX()) {
         this.sprite.setElement(this.bumLeft);
       } else if (path[this.animatingCount][0] > this.getX()) {
-        this.sprite.setElement(this.bumRight);
+        this.sprite.setElement(this.bumAnim_walkRight);
+        fabric.util.requestAnimFrame(function render() {
+          self.canvas.renderAll();
+          fabric.util.requestAnimFrame(render);
+        });
       } else if (path[this.animatingCount][1] < this.getY()) {
         this.sprite.setElement(this.bumUp);
       } else if (path[this.animatingCount][0] > this.getY()) {
@@ -227,6 +241,17 @@ export class Player {
         self.animateWalk(path);
       }});
     } else {
+      if (path[this.animatingCount-1][0] < this.getX()) {
+        //this.sprite.setElement(this.bumLeft);
+      } else if (path[this.animatingCount-1][0] > this.getX()) {
+        //this.sprite.setElement(this.bumRight);
+      } else if (path[this.animatingCount-1][1] < this.getY()) {
+        //this.sprite.setElement(this.bumUp);
+      } else if (path[this.animatingCount-1][0] > this.getY()) {
+       // this.sprite.setElement(this.bumDefault);
+      } else {
+       // this.sprite.setElement(this.bumDefault);
+      }
       self.x = path[path.length-1][0];
       self.y = path[path.length-1][1];
       this.sprite.setElement(this.bumDefault);

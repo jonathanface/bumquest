@@ -7,6 +7,7 @@ export class NPC {
     this.type = Globals.OBJECT_TYPE_NPC;
     this.id = id;
     this.name = 'some asshole';
+    this.description = 'someone who defies description';
     this.parent = parent;
     this.canvas = canvas;
     this.location = null;
@@ -115,6 +116,8 @@ export class NPC {
         selectable:false,
         hoverCursor:'arrow'
       });
+      self.sprite.metadata = {};
+      self.sprite.metadata = self;
       self.canvas.add(self.sprite);
       self.sprite.on('mouseover', function() {
         if (self.parent.state.currentArea.combatOn || self.parent.state.currentArea.getPlayer().isTargeting) {
@@ -245,14 +248,9 @@ export class NPC {
       self.scaleSpriteByYCoord(path[path.length-1][1]);
       self.sprite.animate('left', path[path.length-1][0] - self.width/2, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas) });
       self.sprite.animate('top', path[path.length-1][1] - self.height, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas)});
-      console.log('done', path[path.length-1][0] - self.width/2, path[path.length-1][1] - self.height);
-      
-      //force moves end until I build in combat
-      console.log('callback', callback);
       if (callback) {
         callback();
       }
-      
       self.isMoving = false;
     }
   }

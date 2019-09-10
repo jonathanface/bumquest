@@ -188,8 +188,6 @@ export class CombatManager {
     if (path) {
       path = path.splice(0, path.length-1);
     }
-    console.log('npc distance to move', Math.ceil(path.length/4));
-      console.log('npc weapon range', npc.equipped.range);
     if (Math.ceil(path.length/4) > npc.equipped.range) {
       if (path.length/4 > npc.stats.speed) {
         path = path.splice(0, npc.stats.speed*4);

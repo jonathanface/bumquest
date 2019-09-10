@@ -35,6 +35,47 @@ func FetchArea(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusOK, area)
 }
 
+func FetchAreaNPCs(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	areaID := vars["areaid"]
+	if areaID == "" {
+		RespondWithError(w, http.StatusBadRequest, "Missing areaID")
+		return
+	}
+	ctx, err := processConnectionError(bum_db)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	log.Println("areaid", areaID)
+	query := "SELECT * FROM npcs WHERE location=?"
+	rows, err := bum_db.QueryContext(ctx, query, areaID)
+	defer rows.Close()
+	if processSQLError(w, err) {
+		return
+	}
+	type NPC struct {
+		Id       string  `json:"id"`
+		Name     string  `json:"name"`
+		Descr    string  `json:"descr"`
+		Team     int     `json:"team"`
+		Location string  `json:"location"`
+		ImgX     float32 `json:"x"`
+		ImgY     float32 `json:"y"`
+	}
+	var results []NPC
+	for rows.Next() {
+		npc := NPC{}
+		err := rows.Scan(&npc.Id, &npc.Name, &npc.Descr, &npc.Team, &npc.Location, &npc.ImgX, &npc.ImgY)
+		if processSQLError(w, err) {
+			return
+		}
+		results = append(results, npc)
+	}
+	log.Println(results)
+	respondWithJson(w, http.StatusOK, results)
+}
+
 func FetchWeapon(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	weaponID := vars["weaponid"]

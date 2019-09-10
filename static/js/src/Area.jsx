@@ -151,7 +151,9 @@ export class Area {
   }
   
   endCombatTurn() {
-    this.combat.endPlayerTurn();
+    if (this.combat) {
+      this.combat.endPlayerTurn();
+    }
   }
   
   enterCombat(initiated) {
