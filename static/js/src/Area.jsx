@@ -24,6 +24,7 @@ export class Area {
     this.walkPoints.push({x:0, y:673});
     
     this.actors = [];
+    this.decor = [];
     
     //398px / 30 feet = 13.3
     this.height = 768;

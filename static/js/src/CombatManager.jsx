@@ -9,6 +9,10 @@ export class CombatManager {
     this.canvas = area.canvas;
     
     this.playerTurn = false;
+    if (initiated == 'player') {
+      this.playerTurn = true;
+    }
+    
     this.moveLine = null;
     this.moveText = null;
     
@@ -28,7 +32,9 @@ export class CombatManager {
         this.enemies.push(this.area.actors[i]);
       }
     }
+    console.log(this.allies, this.enemies);
     this.order = this.determineCombatOrder();
+    console.log(this.order);
     this.nextTurn();
   }
   
@@ -42,6 +48,7 @@ export class CombatManager {
     if (this.player.equipped.type != Globals.OBJECT_TYPE_WEAPON) {
       return;
     }
+    console.log('mv', this.player.remainingMoves, this.player.equipped.speed);
     this.player.remainingMoves -= this.player.equipped.speed;
     this.updateMovementPointsDisplay(this.player.remainingMoves);
     /*
@@ -74,6 +81,7 @@ export class CombatManager {
         if (saveRoll >= this.player.stats.luck) {
           this.area.parent.print('You critically missed and lost the rest of your turn.');
           this.player.remainingMoves = 0;
+          this.updateMovementPointsDisplay(this.player.remainingMoves);
         } else {
           this.area.parent.print('You missed.');
         }
@@ -226,7 +234,7 @@ export class CombatManager {
   }
   
   nextTurn(sequence) {
-    this.player.remainingMoves = this.player.speed;
+    this.player.remainingMoves = this.player.stats.speed;
     let self = this;
     if (this.combatSequence >= this.order.length && this.enemies.length) {
       this.combatSequence = 0;
@@ -355,7 +363,6 @@ export class CombatManager {
           if (self.area.walkPath.isPointInPath(end.x, end.y)) {
             let path = self.area.findPath(start, end);
             if (path && path.length) {
-              console.log('pathl', path.length/4)
               self.moveText.set({text:Math.ceil(path.length/4).toString(), left:textPos.x, top:textPos.y});
               if (path.length/4 <= player.remainingMoves) {
                 self.moveLine.set({stroke:'green'});

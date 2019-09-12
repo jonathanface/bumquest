@@ -23,6 +23,8 @@ export class Player {
     this.animatingCount = 0;
     this.bumDefault = new Image();
     
+    this.animInterval;
+    
     this.stats = {};
     /*F.A.C.I.A.L.S
     Fortitude
@@ -49,6 +51,10 @@ export class Player {
     this.stats.critical = this.stats.luck;
     
     this.remainingMoves = this.stats.speed;
+    
+    
+    this.traits = {};
+    this.traits.autism = true;
     
     this.skills = {};
     this.skills.beggin = 5 + (this.stats.charisma + this.stats.attention);
@@ -106,13 +112,11 @@ export class Player {
   getSmellLabel(smell) {
     let smells = ['NOXIOUS', 'DISGUSTING', 'FOUL', 'NOT GREAT', 'MILD'];
     let colors = ['#f55442', '#f5c242', '#eff542', '#b9f542', '#42f57b'];
-    console.log('sml', smell);
     return [smells[smell], colors[smell]];
   }
   
   
   render() {
-    console.log('rend');
     let self = this;
     this.bumDefault.onload = function() {
       self.maxWidth = this.width;
@@ -128,6 +132,9 @@ export class Player {
       });
       self.sprite.metadata = {};
       self.sprite.metadata = self;
+      self.sprite.on('mouseover', function() {
+        self.parent.print('You see: ' + Globals.ucwords(self.name) + '.');
+      });
       self.canvas.add(self.sprite);
       this.dispatchEvent(new Event(Globals.EVENT_PLAYER_READY));
     };
@@ -142,12 +149,29 @@ export class Player {
     this.bumUp = new Image();
     this.bumUp.src = 'img/people/bum_backwards.png';
     
-    this.bumAnim_walkRight = new Image();
-    this.bumAnim_walkRight.src = 'img/animations/bum_anim_walk_right.png';
+    this.bumAnim_walkRight1 = new Image();
+    this.bumAnim_walkRight1.src = 'img/animations/bum_walk_right_01.png';
+    
+    this.bumAnim_walkRight2 = new Image();
+    this.bumAnim_walkRight2.src = 'img/animations/bum_walk_right_02.png';
+    
+    this.bumAnim_walkRight3 = new Image();
+    this.bumAnim_walkRight3.src = 'img/animations/bum_walk_right_03.png';
+    
+    this.bumAnim_walkLeft1 = new Image();
+    this.bumAnim_walkLeft1.src = 'img/animations/bum_walk_left_01.png';
+    
+    this.bumAnim_walkLeft2 = new Image();
+    this.bumAnim_walkLeft2.src = 'img/animations/bum_walk_left_02.png';
+    
+    this.bumAnim_walkLeft3 = new Image();
+    this.bumAnim_walkLeft3.src = 'img/animations/bum_walk_left_03.png';
+
   }
   
+
+  
   resample() {
-    console.log(this);
     this.scaleSpriteByYCoord(this.imgY + this.height);
       
     this.imgX = this.imgX + Math.abs(this.maxWidth - this.width);
@@ -157,7 +181,6 @@ export class Player {
     this.sprite.set('left', this.imgX);
     this.x = this.imgX + this.width/2;
     this.y = this.imgY + this.height;
-    console.log(this.x, this.y);
     this.sprite.setCoords();
   }
   
@@ -201,69 +224,106 @@ export class Player {
     document.querySelector('#movement_points').innerHTML = value;
   }
   
-  animatePng(sprite, src) {
+  runWalkAnimation(dir) {
     
+    switch(dir) {
+      case 'right':
+        this.runningRightWalk = true;
+        break;
+      case 'left':
+        this.runningLeftWalk = true;
+        break;
+    }
+    let self = this;
+    this.animIndex = 1;
+    let newImg = self['bumAnim_walk' + Globals.upperFirstChar(dir) + self.animIndex];
+
+    this.animInterval = setInterval(function() {
+      if (self.animIndex > 3) {
+        self.animIndex = 1;
+      }
+      newImg = self['bumAnim_walk' + Globals.upperFirstChar(dir) + self.animIndex];
+      self.sprite.setElement(newImg);
+      self.animIndex++;
+    }, 250);
+    
+    if (self.animIndex > 3) {
+      self.animIndex = 1;
+    }
+    self.sprite.setElement(newImg);
+    self.animIndex++;
+  }
+  
+  cancelWalkAnimation() {
+    this.runningRightWalk = false;
+    this.runningLeftWalk = false;
+    clearInterval(this.animInterval);
   }
   
   animateWalk(path) {
     let self = this;
+    for (let i=0; i < this.location.actors.length; i++) {
+      if (this.location.actors[i].getY() <= this.getY()) {
+        this.sprite.bringToFront();
+      } else {
+        this.sprite.sendToBack();
+      }
+    }
+    for (let i=0; i < this.location.decor.length; i++) {
+      if (this.location.decor[i].getY() <= this.getY()) {
+        this.sprite.bringToFront();
+      } else {
+        this.sprite.sendToBack();
+      }
+    }
     if (this.animatingCount < path.length) {
-      if (path[this.animatingCount][0] < this.getX()) {
-        this.sprite.setElement(this.bumLeft);
-      } else if (path[this.animatingCount][0] > this.getX()) {
-        this.sprite.setElement(this.bumAnim_walkRight);
-        fabric.util.requestAnimFrame(function render() {
-          self.canvas.renderAll();
-          fabric.util.requestAnimFrame(render);
-        });
+      if (path[this.animatingCount][0] < this.getX() && !this.runningLeftWalk) {
+        self.runWalkAnimation('left');
+      } else if (path[this.animatingCount][0] > this.getX() && !this.runningRightWalk) {
+        self.runWalkAnimation('right');
       } else if (path[this.animatingCount][1] < this.getY()) {
         this.sprite.setElement(this.bumUp);
       } else if (path[this.animatingCount][0] > this.getY()) {
         this.sprite.setElement(this.bumDefault);
       } else {
-        this.sprite.setElement(this.bumDefault);
+        //this.sprite.setElement(this.bumDefault);
       }
-      for (let i=0; i < this.location.actors.length; i++) {
-        if (this.location.actors[i].getY() <= this.getY()) {
-          this.sprite.bringToFront();
-        } else {
-          this.sprite.sendToBack();
-        }
-      }
+      
+      
       this.scaleSpriteByYCoord(path[self.animatingCount][1]);
       this.sprite.animate('left', path[this.animatingCount][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
       this.sprite.animate('top', path[this.animatingCount][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas), onComplete: function() {
+        self.x = path[self.animatingCount][0];
+        self.y = path[self.animatingCount][1];
         self.animatingCount++;
         if (self.animatingCount%4 === 0 && self.parent.state.currentArea.combatOn) {
           self.remainingMoves--;
           self.updateMovementPointsDisplay(self.remainingMoves);
         }
+        
         self.animateWalk(path);
       }});
     } else {
+      self.cancelWalkAnimation();
       if (path[this.animatingCount-1][0] < this.getX()) {
-        //this.sprite.setElement(this.bumLeft);
+        this.sprite.setElement(this.bumLeft);
       } else if (path[this.animatingCount-1][0] > this.getX()) {
-        //this.sprite.setElement(this.bumRight);
+        this.sprite.setElement(this.bumRight);
       } else if (path[this.animatingCount-1][1] < this.getY()) {
-        //this.sprite.setElement(this.bumUp);
+        this.sprite.setElement(this.bumUp);
       } else if (path[this.animatingCount-1][0] > this.getY()) {
-       // this.sprite.setElement(this.bumDefault);
+        this.sprite.setElement(this.bumDefault);
       } else {
        // this.sprite.setElement(this.bumDefault);
       }
       self.x = path[path.length-1][0];
       self.y = path[path.length-1][1];
-      this.sprite.setElement(this.bumDefault);
-      
+
       this.sprite.animate('left', path[path.length-1][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
       this.sprite.animate('top', path[path.length-1][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas)});
       this.scaleSpriteByYCoord(path[path.length-1][1]);
       //
       console.log('done', path[path.length-1][0] - this.width/2, path[path.length-1][1] - this.height);
-      //this.x = Math.round(path[path.length-1][0] + this.width/2);
-      //this.y = Math.round(path[path.length-1][1] + this.height);
-      //console.log(this.x, this.y);
       self.isMoving = false;
       if (self.parent.state.currentArea.combatOn) {
         self.remainingMoves--;

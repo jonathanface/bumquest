@@ -12,10 +12,12 @@ export class Globals {
   static EVENT_AREA_READY = 'areaReady';
   static EVENT_NPC_READY = 'npcReady';
   static EVENT_WEAPON_READY = 'weaponReady';
+  static EVENT_DECOR_READY = 'decorReady';
   
   static OBJECT_TYPE_PLAYER = 1;
   static OBJECT_TYPE_NPC = 2;
   static OBJECT_TYPE_WEAPON = 3;
+  static OBJECT_TYPE_DECOR = 4;
   
   static CRITICAL_FAILURE_CHANCE = 10;
   static CRITICAL_DAMAGE_MODIFIER = 10;

@@ -4,6 +4,7 @@ import {Globals} from './Globals.jsx'
 import {Area} from './Area.jsx'
 import {Player} from './Player.jsx'
 import {NPC} from './NPC.jsx'
+import {Decor} from './Decor.jsx'
 
 export class Landing extends React.Component {
   
@@ -30,26 +31,39 @@ export class Landing extends React.Component {
           self.state.player.location = self.state.currentArea;
           self.state.player.resample();
           
-          let npcInfo = await self.queryBackend('GET', Globals.API_DIR + 'area/' + self.state.currentArea.id + '/npcs');
-          if (npcInfo) {
-            console.log(npcInfo);
-            for (let i=0; i < npcInfo.length; i++) {
-              let npc = new NPC(npcInfo[i].id, canvas, self);
-              npc.name = npcInfo[i].name;
-              npc.description = npcInfo[i].descr;
-              npc.team = npcInfo[i].team;
-              npc.imgX = npcInfo[i].x;
-              npc.imgY = npcInfo[i].y;
-              npc.npcDefault.addEventListener(Globals.EVENT_NPC_READY, function(event) {
-                npc.location = self.state.currentArea;
-                
-                self.state.currentArea.actors.push(npc);
-                npc.resample();
-                self.print('Some asshole is here!');
-              });
-              npc.render();
+          let decorInfo = await self.queryBackend('GET', Globals.API_DIR + 'area/' + self.state.currentArea.id + '/decor');
+          if (decorInfo) {
+            console.log('decor', decorInfo);
+            for (let i=0; i < decorInfo.length; i++) {
+              let decor = new Decor(decorInfo[i], canvas, self);
+              decor.render();
+              self.state.currentArea.decor.push(decor);
             }
+            let npcInfo = await self.queryBackend('GET', Globals.API_DIR + 'area/' + self.state.currentArea.id + '/npcs');
+            if (npcInfo) {
+              for (let i=0; i < npcInfo.length; i++) {
+                let npc = new NPC(npcInfo[i].id, canvas, self);
+                npc.name = npcInfo[i].name;
+                npc.description = npcInfo[i].descr;
+                npc.team = npcInfo[i].team;
+                npc.imgX = npcInfo[i].x;
+                npc.imgY = npcInfo[i].y;
+                npc.npcDefault.addEventListener(Globals.EVENT_NPC_READY, function(event) {
+                  npc.location = self.state.currentArea;
+                  
+                  self.state.currentArea.actors.push(npc);
+                  npc.sprite.bringToFront();
+                  npc.resample();
+                  self.state.currentArea.enterCombat();
+                });
+                npc.render();
+                
+              }
+            }
+            self.state.player.sprite.bringToFront();
           }
+          
+          
           
           
           
@@ -58,23 +72,22 @@ export class Landing extends React.Component {
             event.preventDefault();
             let objectFound = false;
             let clickPoint = new fabric.Point(event.offsetX, event.offsetY);
+            let clickedObjects = [];
             canvas.forEachObject(function (obj) {
-              console.log(obj);
-              if (!objectFound && obj.containsPoint(clickPoint)) {
-                objectFound = true;
-                self.renderRightClickOptions(event,obj);
+              if (obj.containsPoint(clickPoint)) {
+                clickedObjects.push(obj);
               }
             });
+            clickedObjects.sort((a, b) => (canvas.getObjects().indexOf(a) < canvas.getObjects().indexOf(b)) ? 1 : -1)
+            self.renderRightClickOptions(event, clickedObjects[0]);
           };
           
         });
         self.state.currentArea.renderBackground();
         
         self.print('You enter <b>' + dbInfo.name.toLowerCase() + '</b>.');
-        self.print(dbInfo.description);
-        
+        self.print(dbInfo.description, true);
       }
-      
     });
     this.state.player.render();
   }
@@ -83,7 +96,6 @@ export class Landing extends React.Component {
     let self = this;
     let menuTimeout = 2000;
     this.removeAllContextMenus();
-    console.log('obj', element);
     let div = document.createElement('div');
     div.oncontextmenu = function(e) { e.preventDefault(); return false; };
     div.classList.add('contextMenu');
@@ -98,8 +110,7 @@ export class Landing extends React.Component {
     li.appendChild(document.createTextNode('View'));
     li.oncontextmenu = function() { return false; };
     li.onclick = function() {
-      self.print('You see: ' + Globals.ucwords(element.metadata.name) + '.');
-      self.print(Globals.upperFirstChar(element.metadata.description) + '.');
+      self.print(Globals.upperFirstChar(element.metadata.description));
       self.removeAllContextMenus();
     };
     ul.appendChild(li);

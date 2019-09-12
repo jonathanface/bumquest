@@ -120,13 +120,13 @@ export class NPC {
       self.sprite.metadata = self;
       self.canvas.add(self.sprite);
       self.sprite.on('mouseover', function() {
+        self.parent.print('You see: ' + Globals.ucwords(self.name) + '.');
         if (self.parent.state.currentArea.combatOn || self.parent.state.currentArea.getPlayer().isTargeting) {
           self.parent.state.currentArea.getPlayer().targetAcquired = this;
           this.hoverCursor='crosshair';
         }
       });
       self.sprite.on('mouseout', function() {
-        console.log('out');
         self.parent.state.currentArea.getPlayer().targetAcquired = null;
         this.hoverCursor='arrow';
       });
@@ -212,6 +212,18 @@ export class NPC {
   
   animateWalk(path, callback) {
     let self = this;
+    if (this.getY() > this.location.getPlayer().getY()) {
+      this.sprite.bringToFront();
+    } else {
+      this.sprite.sendToBack();
+    }
+    for (let i=0; i < this.location.decor.length; i++) {
+      if (this.location.decor[i].getY() <= this.getY()) {
+        this.sprite.bringToFront();
+      } else {
+        this.sprite.sendToBack();
+      }
+    }
     if (self.animatingCount < path.length) {
       if (path[self.animatingCount][0] < self.getX()) {
         self.sprite.setElement(self.npcLeft);
@@ -224,11 +236,7 @@ export class NPC {
       } else {
         self.sprite.setElement(self.npcDefault);
       }
-      if (this.getY() > this.location.getPlayer().getY()) {
-        this.sprite.bringToFront();
-      } else {
-        this.sprite.sendToBack();
-      }
+      
       //console.log('mv', path[self.animatingCount][0] - self.width/2, path[self.animatingCount][1] - self.height);
       self.scaleSpriteByYCoord(path[self.animatingCount][1]);
       self.sprite.animate('left', path[self.animatingCount][0] - self.width/2, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas) });

@@ -76,6 +76,47 @@ func FetchAreaNPCs(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusOK, results)
 }
 
+func FetchAreaDecor(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	areaID := vars["areaid"]
+	if areaID == "" {
+		RespondWithError(w, http.StatusBadRequest, "Missing areaID")
+		return
+	}
+	ctx, err := processConnectionError(bum_db)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	log.Println("areaid", areaID)
+	query := "SELECT * FROM decor WHERE location=?"
+	rows, err := bum_db.QueryContext(ctx, query, areaID)
+	defer rows.Close()
+	if processSQLError(w, err) {
+		return
+	}
+	type Decoration struct {
+		Id       string  `json:"id"`
+		Name     string  `json:"name"`
+		Descr    string  `json:"descr"`
+		Img      string  `json:"img"`
+		Location string  `json:"location"`
+		X        float32 `json:"x"`
+		Y        float32 `json:"y"`
+	}
+	var results []Decoration
+	for rows.Next() {
+		decoration := Decoration{}
+		err := rows.Scan(&decoration.Id, &decoration.Name, &decoration.Descr, &decoration.X, &decoration.Y, &decoration.Img, &decoration.Location)
+		if processSQLError(w, err) {
+			return
+		}
+		results = append(results, decoration)
+	}
+	log.Println(results)
+	respondWithJson(w, http.StatusOK, results)
+}
+
 func FetchWeapon(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	weaponID := vars["weaponid"]
