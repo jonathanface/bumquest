@@ -20,7 +20,7 @@ export class Landing extends React.Component {
     console.log('landing loaded');
     let self = this;
     let canvas = new fabric.Canvas('c');
-    this.state.player = new Player(0, canvas, this);
+    this.state.player = new Player('43554018-c44b-11e9-bc97-0e49f1f8e77c', canvas, this);
     this.state.player.bumDefault.addEventListener(Globals.EVENT_PLAYER_READY, async function(event) {
       let dbInfo = await self.queryBackend('GET', Globals.API_DIR + 'area/' + '29c94708-c44c-11e9-bc97-0e49f1f8e77c');
       if (dbInfo) {
@@ -54,7 +54,7 @@ export class Landing extends React.Component {
                   self.state.currentArea.actors.push(npc);
                   npc.sprite.bringToFront();
                   npc.resample();
-                  self.state.currentArea.enterCombat();
+                  //self.state.currentArea.enterCombat();
                 });
                 npc.render();
                 

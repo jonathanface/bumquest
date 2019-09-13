@@ -4,6 +4,7 @@ export class Globals {
   static AREAS_DIR = '/img/areas/';
   static TEMPLATE_DIR = '/templates/';
   static API_DIR = '/api/';
+  static ANIMATIONS_DIR = '/img/animations/';
   
   static GRID_SQUARE_WIDTH = 25;
   static GRID_SQUARE_HEIGHT = 25;
@@ -13,6 +14,7 @@ export class Globals {
   static EVENT_NPC_READY = 'npcReady';
   static EVENT_WEAPON_READY = 'weaponReady';
   static EVENT_DECOR_READY = 'decorReady';
+  static EVENT_PATH_WALKED = 'pathWalked';
   
   static OBJECT_TYPE_PLAYER = 1;
   static OBJECT_TYPE_NPC = 2;

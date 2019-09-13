@@ -31,7 +31,6 @@ func FetchArea(w http.ResponseWriter, r *http.Request) {
 	if processSQLError(w, err) {
 		return
 	}
-	log.Println(area)
 	respondWithJson(w, http.StatusOK, area)
 }
 
@@ -72,7 +71,10 @@ func FetchAreaNPCs(w http.ResponseWriter, r *http.Request) {
 		}
 		results = append(results, npc)
 	}
-	log.Println(results)
+	if len(results) == 0 {
+		RespondWithError(w, http.StatusNotFound, "No results")
+		return
+	}
 	respondWithJson(w, http.StatusOK, results)
 }
 
@@ -113,7 +115,51 @@ func FetchAreaDecor(w http.ResponseWriter, r *http.Request) {
 		}
 		results = append(results, decoration)
 	}
-	log.Println(results)
+	if len(results) == 0 {
+		RespondWithError(w, http.StatusNotFound, "No results")
+		return
+	}
+	respondWithJson(w, http.StatusOK, results)
+}
+
+func FetchAnimationCells(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	if id == "" {
+		RespondWithError(w, http.StatusBadRequest, "Missing ID")
+		return
+	}
+	ctx, err := processConnectionError(bum_db)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	query := "SELECT * FROM animation_cells WHERE owner=?"
+	rows, err := bum_db.QueryContext(ctx, query, id)
+	defer rows.Close()
+	if processSQLError(w, err) {
+		return
+	}
+	type AnimationCell struct {
+		Id       string `json:"id"`
+		Owner    string `json:"owner"`
+		Type     string `json:"type"`
+		URL      string `json:"url"`
+		Sequence string `json:"sequence"`
+	}
+	var results []AnimationCell
+	for rows.Next() {
+		cell := AnimationCell{}
+		err := rows.Scan(&cell.Id, &cell.Owner, &cell.URL, &cell.Type, &cell.Sequence)
+		if processSQLError(w, err) {
+			return
+		}
+		results = append(results, cell)
+	}
+	if len(results) == 0 {
+		RespondWithError(w, http.StatusNotFound, "No results")
+		return
+	}
 	respondWithJson(w, http.StatusOK, results)
 }
 

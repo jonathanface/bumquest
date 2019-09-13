@@ -3,7 +3,6 @@ import {Globals} from './Globals.jsx'
 export class Decor {
   
   constructor(data, canvas, parent) {
-    console.log(data);
     this.type = Globals.OBJECT_TYPE_DECOR;
     this.id = data.id;
     this.name = data.name;
@@ -54,7 +53,6 @@ export class Decor {
       self.canvas.add(self.sprite);
       this.dispatchEvent(new Event(Globals.EVENT_DECOR_READY));
     };
-    console.log(this);
     this.img.src = 'img/objects/' + this.imgURL;
   }
   getX() {

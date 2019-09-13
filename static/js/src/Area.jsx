@@ -115,6 +115,7 @@ export class Area {
       if (self.getPlayer().targetAcquired) {
         return;
       }
+      self.getPlayer().cancelAnimations();
       let bounds = self.walkPath.canvas.getBoundingClientRect();
       let start = {};
       start.x = self.parent.state.player.getX();
@@ -140,7 +141,7 @@ export class Area {
             path[i][0] *= Globals.GRID_SQUARE_WIDTH;
             path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
           }
-          self.parent.state.player.walkRoute(path);
+          self.getPlayer().walkRoute(path);
         }
       }
     };

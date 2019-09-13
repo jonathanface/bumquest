@@ -91,6 +91,7 @@ func main() {
 	rtr.HandleFunc(API_PREFIX+"/area/{areaid:[0-9a-zA-Z-]+}/decor", validationMiddleware(API.FetchAreaDecor)).Methods("GET", "OPTIONS")
 	rtr.HandleFunc(API_PREFIX+"/weapon/{weaponid:[0-9a-zA-Z-]+}", validationMiddleware(API.FetchWeapon)).Methods("GET", "OPTIONS")
 	rtr.HandleFunc(API_PREFIX+"/account/{accountid:[0-9a-zA-Z-]+}", validationMiddleware(API.FetchAccount)).Methods("GET", "OPTIONS")
+	rtr.HandleFunc(API_PREFIX+"/animations/{id:[0-9a-zA-Z-]+}", validationMiddleware(API.FetchAnimationCells)).Methods("GET", "OPTIONS")
 	rtr.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
 	staticDir := http.Dir(getStaticDir())

@@ -116,7 +116,7 @@ export class Player {
   }
   
   
-  render() {
+  async render() {
     let self = this;
     this.bumDefault.onload = function() {
       self.maxWidth = this.width;
@@ -149,24 +149,36 @@ export class Player {
     this.bumUp = new Image();
     this.bumUp.src = 'img/people/bum_backwards.png';
     
-    this.bumAnim_walkRight1 = new Image();
-    this.bumAnim_walkRight1.src = 'img/animations/bum_walk_right_01.png';
+    this.walkRightFrames = [];
+    this.walkLeftFrames = [];
+    this.walkUpFrames = [];
+    this.walkDownFrames = [];
+    this.talkFrames = [];
     
-    this.bumAnim_walkRight2 = new Image();
-    this.bumAnim_walkRight2.src = 'img/animations/bum_walk_right_02.png';
-    
-    this.bumAnim_walkRight3 = new Image();
-    this.bumAnim_walkRight3.src = 'img/animations/bum_walk_right_03.png';
-    
-    this.bumAnim_walkLeft1 = new Image();
-    this.bumAnim_walkLeft1.src = 'img/animations/bum_walk_left_01.png';
-    
-    this.bumAnim_walkLeft2 = new Image();
-    this.bumAnim_walkLeft2.src = 'img/animations/bum_walk_left_02.png';
-    
-    this.bumAnim_walkLeft3 = new Image();
-    this.bumAnim_walkLeft3.src = 'img/animations/bum_walk_left_03.png';
-
+    let dbInfo = await self.parent.queryBackend('GET', Globals.API_DIR + 'animations/' + this.id);
+    if (dbInfo) {
+      for (let i=0; i < dbInfo.length; i++) {
+        let img = new Image();
+        img.src = Globals.ANIMATIONS_DIR + dbInfo[i].url;
+        switch(dbInfo[i].type) {
+          case 'walk_left':
+            this.walkLeftFrames.push(img);
+            break;
+          case 'walk_right':
+            this.walkRightFrames.push(img);
+            break;
+          case 'walk_up':
+            this.walkUpFrames.push(img);
+            break;
+          case 'walk_down':
+            this.walkDownFrames.push(img);
+            break;
+          case 'talk':
+            this.talkFrames.push(img);
+            break;
+        }
+      }
+    }
   }
   
 
@@ -249,104 +261,253 @@ export class Player {
   }
   
   runWalkAnimation(dir) {
-    
+    let frames;
     switch(dir) {
       case 'right':
         this.runningRightWalk = true;
+        frames = this.walkRightFrames;
         break;
       case 'left':
         this.runningLeftWalk = true;
+        frames = this.walkLeftFrames;
+        break;
+      case 'up':
+        this.runningUpWalk = true;
+        frames = this.walkUpFrames;
+        break;
+      case 'down':
+        this.runningDownWalk = true;
+        frames = this.walkDownFrames;
+        break;
+      case 'talk':
+        this.runningTalk = true;
+        frames = this.talkFrames;
         break;
     }
     let self = this;
-    this.animIndex = 1;
-    let newImg = self['bumAnim_walk' + Globals.upperFirstChar(dir) + self.animIndex];
-
+    this.animIndex = 0;
     this.animInterval = setInterval(function() {
-      if (self.animIndex > 3) {
-        self.animIndex = 1;
+      if (self.animIndex >= frames.length) {
+        console.log('runanim int');
+        self.animIndex = 0;
       }
-      newImg = self['bumAnim_walk' + Globals.upperFirstChar(dir) + self.animIndex];
-      self.sprite.setElement(newImg);
+      self.sprite.setElement(frames[self.animIndex]);
       self.animIndex++;
     }, 250);
     
-    if (self.animIndex > 3) {
-      self.animIndex = 1;
-    }
-    self.sprite.setElement(newImg);
-    self.animIndex++;
+    this.sprite.setElement(frames[this.animIndex]);
+    this.animIndex++;
   }
   
-  cancelWalkAnimation() {
-    this.runningRightWalk = false;
-    this.runningLeftWalk = false;
+  cancelAnimations() {
+    console.log('clear animations');
     clearInterval(this.animInterval);
+    this.currentPath = null;
+    this.bumDefault.removeEventListener(Globals.EVENT_PATH_WALKED, this.walkCallback);
+    this.runningWalkLeft = false;
+    this.runningWalkRight = false;
+    this.runningWalkUp = false;
+    this.runningWalkDown = false;
+    this.runningTalk = false;
+    this.isMoving = false;
   }
   
-  animateWalk(path) {
+  animateWalk(x, y) {
+    console.log('check anim');
+    let self = this;
+
+    this.scaleSpriteByYCoord(y);
+    
+    this.sprite.animate('left',
+                        x - this.width/2,
+                        {
+                          duration:100,
+                          onChange: this.canvas.renderAll.bind(this.canvas),
+                          abort: function() {
+                            if (!self.isMoving) {
+                              console.log('cancel');
+                              self.x = self.sprite.aCoords.bl.x + self.width/2;
+                              self.y = self.sprite.aCoords.bl.y;
+                            }
+                            return !self.isMoving;
+                          }
+                        });
+    this.sprite.animate('top',
+                        y - this.height,
+                        {
+                          duration:100,
+                          onChange: this.canvas.renderAll.bind(this.canvas),
+                          abort: function() {
+                            if (!self.isMoving) {
+                              console.log('cancel');
+                              self.x = self.sprite.aCoords.bl.x + self.width/2;
+                              self.y = self.sprite.aCoords.bl.y;
+                            }
+                            return !self.isMoving;
+                          },
+                          onComplete: function() {
+                            self.x = x;
+                            self.y = y;
+                            if (this.animationCount%4 === 0 && self.parent.state.currentArea.combatOn) {
+                              self.remainingMoves--;
+                              self.updateMovementPointsDisplay(self.remainingMoves);
+                            }
+                            self.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_WALKED));
+                          }
+                        });
+
+    this.adjustZPosition();
+    
+    /*
     let self = this;
     if (this.animatingCount < path.length) {
-      if (path[self.animatingCount][1] < self.getY()) {
-        self.sprite.setElement(self.bum);
-      } else if (path[self.animatingCount][0] > self.getY()) {
-        self.sprite.setElement(self.bumDefault);
+      if (path[this.animatingCount][1] < this.getY() && !this.runningUpWalk) {
+        console.log('up');
+        this.runWalkAnimation('up');
+      } else if (path[this.animatingCount][1] > this.getY() && !this.runningDownWalk) {
+        console.log('down');
+        this.runWalkAnimation('down');
       } else if (path[this.animatingCount][0] < this.getX() && !this.runningLeftWalk) {
-        self.runWalkAnimation('left');
+        console.log('left');
+        this.runWalkAnimation('left');
       } else if (path[this.animatingCount][0] > this.getX() && !this.runningRightWalk) {
-        self.runWalkAnimation('right');
+        console.log('right');
+        this.runWalkAnimation('right');
       }
-      this.scaleSpriteByYCoord(path[self.animatingCount][1]);
-      this.sprite.animate('left', path[this.animatingCount][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
-      this.sprite.animate('top', path[this.animatingCount][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas), onComplete: function() {
-        self.x = path[self.animatingCount][0];
-        self.y = path[self.animatingCount][1];
-        self.animatingCount++;
-        if (self.animatingCount%4 === 0 && self.parent.state.currentArea.combatOn) {
-          self.remainingMoves--;
-          self.updateMovementPointsDisplay(self.remainingMoves);
-        }
-        
-        self.animateWalk(path);
-      }});
+      this.scaleSpriteByYCoord(path[this.animatingCount][1]);
+      this.sprite.animate('left',
+                          path[this.animatingCount][0] - this.width/2,
+                          {
+                            duration:100,
+                            onChange: this.canvas.renderAll.bind(this.canvas),
+                            abort: function() {
+                              if (!self.isMoving) {
+                                console.log('cancel');
+                                self.x = self.sprite.aCoords.bl.x + self.width/2;
+                                self.y = self.sprite.aCoords.bl.y;
+                              }
+                              return !self.isMoving;
+                            }
+                          });
+      this.sprite.animate('top',
+                          path[this.animatingCount][1] - this.height,
+                          {
+                            duration:100,
+                            onChange: this.canvas.renderAll.bind(this.canvas),
+                            abort: function() {
+                              if (!self.isMoving) {
+                                console.log('cancel');
+                                self.x = self.sprite.aCoords.bl.x + self.width/2;
+                                self.y = self.sprite.aCoords.bl.y;
+                              }
+                              return !self.isMoving;
+                            },
+                            onComplete: function() {
+                              console.log('pth', path, self.animatingCount);
+                              self.x = path[self.animatingCount][0];
+                              self.y = path[self.animatingCount][1];
+                              self.animatingCount++;
+                              if (self.animatingCount%4 === 0 && self.parent.state.currentArea.combatOn) {
+                                self.remainingMoves--;
+                                self.updateMovementPointsDisplay(self.remainingMoves);
+                              }
+                              if (self.isMoving) {
+                                self.animateWalk(path);
+                              }
+                            }
+                          });
     } else {
-      self.cancelWalkAnimation();
+      this.cancelAnimations();
       if (path[this.animatingCount-1][0] < this.getX()) {
         this.sprite.setElement(this.bumLeft);
       } else if (path[this.animatingCount-1][0] > this.getX()) {
         this.sprite.setElement(this.bumRight);
       } else if (path[this.animatingCount-1][1] < this.getY()) {
         this.sprite.setElement(this.bumUp);
-      } else if (path[this.animatingCount-1][0] > this.getY()) {
+      } else if (path[this.animatingCount-1][1] > this.getY()) {
         this.sprite.setElement(this.bumDefault);
       } else {
         this.sprite.setElement(this.bumDefault);
       }
       console.log('done player walk');
-      self.x = path[path.length-1][0];
-      self.y = path[path.length-1][1];
+      this.x = path[path.length-1][0];
+      this.y = path[path.length-1][1];
 
-      this.sprite.animate('left', path[path.length-1][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
-      this.sprite.animate('top', path[path.length-1][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas)});
+      this.sprite.animate('left',
+                          path[path.length-1][0] - this.width/2,
+                          {
+                            duration:100,
+                            abort: function() {
+                              if (!self.isMoving) {
+                                self.x = self.sprite.aCoords.bl.x + self.width/2;
+                                self.y = self.sprite.aCoords.bl.y;
+                              }
+                              return !self.isMoving;
+                            },
+                            onChange: this.canvas.renderAll.bind(this.canvas) });
+      this.sprite.animate('top',
+                          path[path.length-1][1] - this.height,
+                          {
+                            duration:100,
+                            abort:function() {
+                              if (!self.isMoving) {
+                                self.x = self.sprite.aCoords.bl.x + self.width/2;
+                                self.y = self.sprite.aCoords.bl.y;
+                              }
+                              return !self.isMoving;
+                            },
+                            onChange: this.canvas.renderAll.bind(this.canvas)});
       this.scaleSpriteByYCoord(path[path.length-1][1]);
       //
       console.log('done', path[path.length-1][0] - this.width/2, path[path.length-1][1] - this.height);
-      self.isMoving = false;
-      if (self.parent.state.currentArea.combatOn) {
-        self.remainingMoves--;
-        if (self.remainingMoves < 0) {
-          self.remainingMoves = 0;
+      this.isMoving = false;
+      if (this.parent.state.currentArea.combatOn) {
+        this.remainingMoves--;
+        if (this.remainingMoves < 0) {
+          this.remainingMoves = 0;
         }
-        self.updateMovementPointsDisplay(self.remainingMoves);
+        this.updateMovementPointsDisplay(this.remainingMoves);
       }
     }
-    this.adjustZPosition();
+    this.adjustZPosition();*/
+  }
+  
+  cycleAnimation() {
+    console.log('path segment walked');
+    this.animationCount++;
+    //console.log(this.animationCount, this.currentPath.length);
+    if (this.animationCount < this.currentPath.length) {
+      this.animateWalk(this.currentPath[this.animationCount][0], this.currentPath[this.animationCount][1]);
+    } else {
+      console.log('entire path walked');
+      this.cancelAnimations();
+    }
   }
   
   walkRoute(path) {
     this.isMoving = true;
-    this.animatingCount = 0;
-    this.animateWalk(path);
+    this.animationCount = 0;
+    this.currentPath = path;
+    this.walkCallback = this.cycleAnimation.bind(this)
+    this.bumDefault.addEventListener(Globals.EVENT_PATH_WALKED, this.walkCallback);
+    
+    let x = path[path.length-1][0];
+    let y = path[path.length-1][1];
+    
+    if (x < this.getX()) {
+      this.runWalkAnimation('left');
+    } else if (x > this.getX()) {
+      this.runWalkAnimation('right');
+    } else if (y < this.getY()) {
+      this.runWalkAnimation('up');
+    } else if (y > this.getY()) {
+      this.runWalkAnimation('down');
+    }
+    this.animateWalk(path[this.animationCount][0], path[this.animationCount][1]);
+    
+    //this.animatingCount = 0;
+    
+    //this.animateWalk(path);
   }
 
 }
