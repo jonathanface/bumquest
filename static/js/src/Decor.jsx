@@ -30,6 +30,7 @@ export class Decor {
       self.maxHeight = this.height;
       self.height = this.height;
       self.width = this.width;
+      
 
       self.sprite = new fabric.Image(self.img, {
         left: self.x,
@@ -37,6 +38,7 @@ export class Decor {
         selectable:false,
         hoverCursor:'arrow'
       });
+      self.y += this.height;
       self.sprite.metadata = {};
       self.sprite.metadata = self;
       self.canvas.add(self.sprite);

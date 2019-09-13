@@ -210,20 +210,44 @@ export class NPC {
     return Math.round(this.y);
   }
   
-  animateWalk(path, callback) {
-    let self = this;
-    if (this.getY() > this.location.getPlayer().getY()) {
-      this.sprite.bringToFront();
-    } else {
-      this.sprite.sendToBack();
-    }
+  adjustZPosition() {
+    let myZ = this.canvas.getObjects().indexOf(this.sprite);
     for (let i=0; i < this.location.decor.length; i++) {
-      if (this.location.decor[i].getY() <= this.getY()) {
-        this.sprite.bringToFront();
-      } else {
-        this.sprite.sendToBack();
+      if (Globals.isIntersecting(this.sprite, this.location.decor[i].sprite)) {
+        let decorZ = this.canvas.getObjects().indexOf(this.location.decor[i].sprite);
+        if (this.location.decor[i].getY() <= this.getY() && decorZ >= myZ) {
+          this.sprite.moveTo(decorZ+1);
+        } else if (this.location.decor[i].getY() > this.getY() && decorZ <= myZ) {
+          this.sprite.moveTo(decorZ-1);
+        }
       }
     }
+    for (let i=0; i < this.location.actors.length; i++) {
+      if (this.location.actors[i] == this) {
+        continue;
+      }
+      if (Globals.isIntersecting(this.sprite, this.location.actors[i].sprite)) {
+        let actorZ = this.canvas.getObjects().indexOf(this.location.actors[i].sprite);
+        if (this.location.actors[i].getY() <= this.getY() && actorZ >= myZ) {
+          this.sprite.moveTo(actorZ+1);
+        } else if (this.location.actors[i].getY() > this.getY() && actorZ <= myZ) {
+          this.sprite.moveTo(actorZ-1);
+        }
+      }
+    }
+    if (Globals.isIntersecting(this.sprite, this.location.getPlayer().sprite)) {
+      let playerZ = this.canvas.getObjects().indexOf(this.location.getPlayer().sprite);
+      if (this.location.getPlayer().getY() <= this.getY() && playerZ >= myZ) {
+        this.sprite.moveTo(playerZ+1);
+      } else if (this.location.getPlayer().getY() > this.getY() && playerZ <= myZ) {
+        this.sprite.moveTo(playerZ-1);
+      }
+    }
+  }
+  
+  animateWalk(path, callback) {
+    let self = this;
+    
     if (self.animatingCount < path.length) {
       if (path[self.animatingCount][0] < self.getX()) {
         self.sprite.setElement(self.npcLeft);
@@ -232,8 +256,6 @@ export class NPC {
       } else if (path[self.animatingCount][1] < self.getY()) {
         self.sprite.setElement(self.npcUp);
       } else if (path[self.animatingCount][0] > self.getY()) {
-        self.sprite.setElement(self.npcDefault);
-      } else {
         self.sprite.setElement(self.npcDefault);
       }
       
@@ -250,9 +272,20 @@ export class NPC {
       }});
     } else {
       self.remainingMoves--;
+      
+      if (path[path.length-1][0] < path[path.length-2][0]) {
+        self.sprite.setElement(self.npcLeft);
+      } else if (path[path.length-1][0] > path[path.length-2][0]) {
+        self.sprite.setElement(self.npcRight);
+      } else if (path[path.length-1][1] < path[path.length-2][1]) {
+        self.sprite.setElement(self.npcUp);
+      } else if (path[path.length-1][1] > path[path.length-2][1]) {
+        self.sprite.setElement(self.npcDefault);
+      } else {
+        self.sprite.setElement(self.npcDefault);
+      }
       self.x = path[path.length-1][0];
       self.y = path[path.length-1][1];
-      self.sprite.setElement(self.npcDefault);
       self.scaleSpriteByYCoord(path[path.length-1][1]);
       self.sprite.animate('left', path[path.length-1][0] - self.width/2, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas) });
       self.sprite.animate('top', path[path.length-1][1] - self.height, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas)});
@@ -261,6 +294,7 @@ export class NPC {
       }
       self.isMoving = false;
     }
+    this.adjustZPosition();
   }
   
   walkRoute(path, callback) {

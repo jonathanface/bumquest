@@ -210,6 +210,30 @@ export class Player {
     //this.y = y + this.height;
     //this.x = this.x + this.width/2;
   }
+  
+  adjustZPosition() {
+    let myZ = this.canvas.getObjects().indexOf(this.sprite);
+    for (let i=0; i < this.location.decor.length; i++) {
+      if (Globals.isIntersecting(this.sprite, this.location.decor[i].sprite)) {
+        let decorZ = this.canvas.getObjects().indexOf(this.location.decor[i].sprite);
+        if (this.location.decor[i].getY() <= this.getY() && decorZ >= myZ) {
+          this.sprite.moveTo(decorZ+1);
+        } else if (this.location.decor[i].getY() > this.getY() && decorZ <= myZ) {
+          this.sprite.moveTo(decorZ-1);
+        }
+      }
+    }
+    for (let i=0; i < this.location.actors.length; i++) {
+      if (Globals.isIntersecting(this.sprite, this.location.actors[i].sprite)) {
+        let actorZ = this.canvas.getObjects().indexOf(this.location.actors[i].sprite);
+        if (this.location.actors[i].getY() <= this.getY() && actorZ >= myZ) {
+          this.sprite.moveTo(actorZ+1);
+        } else if (this.location.actors[i].getY() > this.getY() && actorZ <= myZ) {
+          this.sprite.moveTo(actorZ-1);
+        }
+      }
+    }
+  }
 
   
   getX() {
@@ -262,34 +286,16 @@ export class Player {
   
   animateWalk(path) {
     let self = this;
-    for (let i=0; i < this.location.actors.length; i++) {
-      if (this.location.actors[i].getY() <= this.getY()) {
-        this.sprite.bringToFront();
-      } else {
-        this.sprite.sendToBack();
-      }
-    }
-    for (let i=0; i < this.location.decor.length; i++) {
-      if (this.location.decor[i].getY() <= this.getY()) {
-        this.sprite.bringToFront();
-      } else {
-        this.sprite.sendToBack();
-      }
-    }
     if (this.animatingCount < path.length) {
-      if (path[this.animatingCount][0] < this.getX() && !this.runningLeftWalk) {
+      if (path[self.animatingCount][1] < self.getY()) {
+        self.sprite.setElement(self.bum);
+      } else if (path[self.animatingCount][0] > self.getY()) {
+        self.sprite.setElement(self.bumDefault);
+      } else if (path[this.animatingCount][0] < this.getX() && !this.runningLeftWalk) {
         self.runWalkAnimation('left');
       } else if (path[this.animatingCount][0] > this.getX() && !this.runningRightWalk) {
         self.runWalkAnimation('right');
-      } else if (path[this.animatingCount][1] < this.getY()) {
-        this.sprite.setElement(this.bumUp);
-      } else if (path[this.animatingCount][0] > this.getY()) {
-        this.sprite.setElement(this.bumDefault);
-      } else {
-        //this.sprite.setElement(this.bumDefault);
       }
-      
-      
       this.scaleSpriteByYCoord(path[self.animatingCount][1]);
       this.sprite.animate('left', path[this.animatingCount][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
       this.sprite.animate('top', path[this.animatingCount][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas), onComplete: function() {
@@ -314,8 +320,9 @@ export class Player {
       } else if (path[this.animatingCount-1][0] > this.getY()) {
         this.sprite.setElement(this.bumDefault);
       } else {
-       // this.sprite.setElement(this.bumDefault);
+        this.sprite.setElement(this.bumDefault);
       }
+      console.log('done player walk');
       self.x = path[path.length-1][0];
       self.y = path[path.length-1][1];
 
@@ -333,6 +340,7 @@ export class Player {
         self.updateMovementPointsDisplay(self.remainingMoves);
       }
     }
+    this.adjustZPosition();
   }
   
   walkRoute(path) {

@@ -71,4 +71,10 @@ export class Globals {
     }
     return Math.ceil(path.length/4);
   }
+  
+  static isIntersecting(obj1, obj2) {
+    return obj1.intersectsWithObject(obj2) ||
+           obj1.isContainedWithinObject(obj2) ||
+           obj2.isContainedWithinObject(obj1);
+  }
 }
