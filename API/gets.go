@@ -98,20 +98,38 @@ func FetchAreaDecor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	type Decoration struct {
-		Id       string  `json:"id"`
-		Name     string  `json:"name"`
-		Descr    string  `json:"descr"`
-		Img      string  `json:"img"`
-		Location string  `json:"location"`
-		X        float32 `json:"x"`
-		Y        float32 `json:"y"`
+		Id        string  `json:"id"`
+		Name      string  `json:"name"`
+		Descr     string  `json:"descr"`
+		Img       string  `json:"img"`
+		Location  string  `json:"location"`
+		X         float32 `json:"x"`
+		Y         float32 `json:"y"`
+		Container bool    `json:"container"`
+		Door      bool    `json:"door"`
 	}
 	var results []Decoration
 	for rows.Next() {
 		decoration := Decoration{}
-		err := rows.Scan(&decoration.Id, &decoration.Name, &decoration.Descr, &decoration.X, &decoration.Y, &decoration.Img, &decoration.Location)
+		err := rows.Scan(&decoration.Id, &decoration.Name, &decoration.Descr, &decoration.X, &decoration.Y,
+			&decoration.Img, &decoration.Location, &decoration.Container, &decoration.Door)
 		if processSQLError(w, err) {
 			return
+		}
+		if decoration.Container {
+			var is_open bool
+			var closed_url string
+			var open_url string
+			query = "SELECT open_url, closed_url, open FROM containers WHERE decor_id=?"
+			err = bum_db.QueryRowContext(ctx, query, decoration.Id).Scan(&open_url, &closed_url, &is_open)
+			if processSQLError(w, err) {
+				return
+			}
+			if is_open {
+				decoration.Img = open_url
+			} else {
+				decoration.Img = closed_url
+			}
 		}
 		results = append(results, decoration)
 	}

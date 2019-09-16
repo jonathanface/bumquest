@@ -11,6 +11,9 @@ export class Decor {
     this.canvas = canvas;
     this.location = data.location;
     this.imgURL = data.img;
+    
+    this.container = data.container;
+    this.door = data.door;
 
     this.x = data.x;
     this.y = data.y;
@@ -30,6 +33,9 @@ export class Decor {
       self.height = this.height;
       self.width = this.width;
       
+      if (self.sprite) {
+        self.sprite.remove();
+      }
 
       self.sprite = new fabric.Image(self.img, {
         left: self.x,

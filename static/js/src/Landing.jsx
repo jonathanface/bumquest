@@ -114,6 +114,17 @@ export class Landing extends React.Component {
       self.removeAllContextMenus();
     };
     ul.appendChild(li);
+    console.log('el', element.metadata);
+    if (element.metadata.container || element.metadata.door) {
+      li = document.createElement('li');
+      li.appendChild(document.createTextNode('Open'));
+      li.oncontextmenu = function() { return false; };
+      li.onclick = function() {
+        self.state.player.tryToOpen(element.metadata);
+        self.removeAllContextMenus();
+      };
+      ul.appendChild(li);
+    }
     
     div.appendChild(ul);
     document.body.appendChild(div);
@@ -165,7 +176,7 @@ export class Landing extends React.Component {
             resolve(JSON.parse(this.response));
             break;
           default:
-            reject();
+            reject({'code':this.status, 'message':JSON.parse(this.response).error});
         }
       };
       xhr.send();

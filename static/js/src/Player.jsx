@@ -180,9 +180,7 @@ export class Player {
       }
     }
   }
-  
 
-  
   resample() {
     this.scaleSpriteByYCoord(this.imgY + this.height);
       
@@ -357,119 +355,6 @@ export class Player {
                         });
 
     this.adjustZPosition();
-    
-    /*
-    let self = this;
-    if (this.animatingCount < path.length) {
-      if (path[this.animatingCount][1] < this.getY() && !this.runningUpWalk) {
-        console.log('up');
-        this.runWalkAnimation('up');
-      } else if (path[this.animatingCount][1] > this.getY() && !this.runningDownWalk) {
-        console.log('down');
-        this.runWalkAnimation('down');
-      } else if (path[this.animatingCount][0] < this.getX() && !this.runningLeftWalk) {
-        console.log('left');
-        this.runWalkAnimation('left');
-      } else if (path[this.animatingCount][0] > this.getX() && !this.runningRightWalk) {
-        console.log('right');
-        this.runWalkAnimation('right');
-      }
-      this.scaleSpriteByYCoord(path[this.animatingCount][1]);
-      this.sprite.animate('left',
-                          path[this.animatingCount][0] - this.width/2,
-                          {
-                            duration:100,
-                            onChange: this.canvas.renderAll.bind(this.canvas),
-                            abort: function() {
-                              if (!self.isMoving) {
-                                console.log('cancel');
-                                self.x = self.sprite.aCoords.bl.x + self.width/2;
-                                self.y = self.sprite.aCoords.bl.y;
-                              }
-                              return !self.isMoving;
-                            }
-                          });
-      this.sprite.animate('top',
-                          path[this.animatingCount][1] - this.height,
-                          {
-                            duration:100,
-                            onChange: this.canvas.renderAll.bind(this.canvas),
-                            abort: function() {
-                              if (!self.isMoving) {
-                                console.log('cancel');
-                                self.x = self.sprite.aCoords.bl.x + self.width/2;
-                                self.y = self.sprite.aCoords.bl.y;
-                              }
-                              return !self.isMoving;
-                            },
-                            onComplete: function() {
-                              console.log('pth', path, self.animatingCount);
-                              self.x = path[self.animatingCount][0];
-                              self.y = path[self.animatingCount][1];
-                              self.animatingCount++;
-                              if (self.animatingCount%4 === 0 && self.parent.state.currentArea.combatOn) {
-                                self.remainingMoves--;
-                                self.updateMovementPointsDisplay(self.remainingMoves);
-                              }
-                              if (self.isMoving) {
-                                self.animateWalk(path);
-                              }
-                            }
-                          });
-    } else {
-      this.cancelAnimations();
-      if (path[this.animatingCount-1][0] < this.getX()) {
-        this.sprite.setElement(this.bumLeft);
-      } else if (path[this.animatingCount-1][0] > this.getX()) {
-        this.sprite.setElement(this.bumRight);
-      } else if (path[this.animatingCount-1][1] < this.getY()) {
-        this.sprite.setElement(this.bumUp);
-      } else if (path[this.animatingCount-1][1] > this.getY()) {
-        this.sprite.setElement(this.bumDefault);
-      } else {
-        this.sprite.setElement(this.bumDefault);
-      }
-      console.log('done player walk');
-      this.x = path[path.length-1][0];
-      this.y = path[path.length-1][1];
-
-      this.sprite.animate('left',
-                          path[path.length-1][0] - this.width/2,
-                          {
-                            duration:100,
-                            abort: function() {
-                              if (!self.isMoving) {
-                                self.x = self.sprite.aCoords.bl.x + self.width/2;
-                                self.y = self.sprite.aCoords.bl.y;
-                              }
-                              return !self.isMoving;
-                            },
-                            onChange: this.canvas.renderAll.bind(this.canvas) });
-      this.sprite.animate('top',
-                          path[path.length-1][1] - this.height,
-                          {
-                            duration:100,
-                            abort:function() {
-                              if (!self.isMoving) {
-                                self.x = self.sprite.aCoords.bl.x + self.width/2;
-                                self.y = self.sprite.aCoords.bl.y;
-                              }
-                              return !self.isMoving;
-                            },
-                            onChange: this.canvas.renderAll.bind(this.canvas)});
-      this.scaleSpriteByYCoord(path[path.length-1][1]);
-      //
-      console.log('done', path[path.length-1][0] - this.width/2, path[path.length-1][1] - this.height);
-      this.isMoving = false;
-      if (this.parent.state.currentArea.combatOn) {
-        this.remainingMoves--;
-        if (this.remainingMoves < 0) {
-          this.remainingMoves = 0;
-        }
-        this.updateMovementPointsDisplay(this.remainingMoves);
-      }
-    }
-    this.adjustZPosition();*/
   }
   
   cycleAnimation() {
@@ -481,6 +366,50 @@ export class Player {
     } else {
       console.log('entire path walked');
       this.cancelAnimations();
+    }
+  }
+  
+  async openContainer(data) {
+    this.bumDefault.removeEventListener(Globals.EVENT_PATH_WALKED, this.walkActionCallback);
+    this.walkActionCallback = null;
+    let self = this;
+    let containerInfo = await this.parent.queryBackend('PUT', Globals.API_DIR + 'container/' + data.id + '/open').catch((err) => {
+      self.parent.print(err.message);
+    });
+    if (containerInfo) {
+      data.imgURL = containerInfo.img_open;
+      data.render();
+    }
+  }
+  
+  tryToOpen(data) {
+    console.log('data', data);
+    if (!this.location.combatOn) {
+      this.walkActionCallback = this.openContainer.bind(this, data)
+      this.bumDefault.addEventListener(Globals.EVENT_PATH_WALKED, this.walkActionCallback);
+      this.walkToObject(data);
+    }
+  }
+  
+  walkToObject(target) {
+    if (!this.location.combatOn) {
+      this.cancelAnimations();
+      let start = {};
+      start.x = this.getX();
+      start.y = this.getY();
+      let end = {};
+      end.x = target.getX();
+      end.y = target.getY();
+      if (this.location.walkPath.isPointInPath(end.x, end.y)) {
+        let path = this.location.findPath(start, end);
+        if (path && path.length) {
+          for (let i=0; i < path.length; i++) {
+            path[i][0] *= Globals.GRID_SQUARE_WIDTH;
+            path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
+          }
+          this.walkRoute(path);
+        }
+      }
     }
   }
   
