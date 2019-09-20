@@ -107,6 +107,7 @@ func FetchAreaDecor(w http.ResponseWriter, r *http.Request) {
 		Y         float32 `json:"y"`
 		Container bool    `json:"container"`
 		Door      bool    `json:"door"`
+		Open      bool    `json:"open"`
 	}
 	var results []Decoration
 	for rows.Next() {
@@ -117,15 +118,14 @@ func FetchAreaDecor(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if decoration.Container {
-			var is_open bool
 			var closed_url string
 			var open_url string
 			query = "SELECT open_url, closed_url, open FROM containers WHERE decor_id=?"
-			err = bum_db.QueryRowContext(ctx, query, decoration.Id).Scan(&open_url, &closed_url, &is_open)
+			err = bum_db.QueryRowContext(ctx, query, decoration.Id).Scan(&open_url, &closed_url, &decoration.Open)
 			if processSQLError(w, err) {
 				return
 			}
-			if is_open {
+			if decoration.Open {
 				decoration.Img = open_url
 			} else {
 				decoration.Img = closed_url

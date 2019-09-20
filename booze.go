@@ -94,6 +94,7 @@ func main() {
 	rtr.HandleFunc(API_PREFIX+"/animations/{id:[0-9a-zA-Z-]+}", validationMiddleware(API.FetchAnimationCells)).Methods("GET", "OPTIONS")
 
 	rtr.HandleFunc(API_PREFIX+"/container/{id:[0-9a-zA-Z-]+}/open", validationMiddleware(API.OpenContainer)).Methods("PUT", "OPTIONS")
+	rtr.HandleFunc(API_PREFIX+"/container/{id:[0-9a-zA-Z-]+}/close", validationMiddleware(API.CloseContainer)).Methods("PUT", "OPTIONS")
 
 	rtr.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 

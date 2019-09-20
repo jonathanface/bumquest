@@ -114,13 +114,21 @@ export class Landing extends React.Component {
       self.removeAllContextMenus();
     };
     ul.appendChild(li);
-    console.log('el', element.metadata);
-    if (element.metadata.container || element.metadata.door) {
+    if ((element.metadata.container || element.metadata.door) && !element.metadata.open) {
       li = document.createElement('li');
       li.appendChild(document.createTextNode('Open'));
       li.oncontextmenu = function() { return false; };
       li.onclick = function() {
         self.state.player.tryToOpen(element.metadata);
+        self.removeAllContextMenus();
+      };
+      ul.appendChild(li);
+    } else if ((element.metadata.container || element.metadata.door) && element.metadata.open) {
+      li = document.createElement('li');
+      li.appendChild(document.createTextNode('Close'));
+      li.oncontextmenu = function() { return false; };
+      li.onclick = function() {
+        self.state.player.tryToClose(element.metadata);
         self.removeAllContextMenus();
       };
       ul.appendChild(li);

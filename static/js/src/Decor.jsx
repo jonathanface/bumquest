@@ -14,9 +14,10 @@ export class Decor {
     
     this.container = data.container;
     this.door = data.door;
+    this.open = data.open;
 
-    this.x = data.x;
-    this.y = data.y;
+    this.orgX = data.x;
+    this.orgY = data.y;
     this.height = 0;
     this.width = 0;
     this.maxHeight = 0;
@@ -32,18 +33,16 @@ export class Decor {
       self.maxHeight = this.height;
       self.height = this.height;
       self.width = this.width;
-      
-      if (self.sprite) {
-        self.sprite.remove();
+      if (!self.sprite) {
+        self.sprite = new fabric.Image(self.img, {
+          left: self.orgX,
+          top: self.orgY,
+          selectable:false,
+          hoverCursor:'arrow'
+        });
       }
-
-      self.sprite = new fabric.Image(self.img, {
-        left: self.x,
-        top: self.y,
-        selectable:false,
-        hoverCursor:'arrow'
-      });
-      self.y += this.height;
+      self.x = self.orgX + this.width/2;
+      self.y = self.orgY + this.height;
       self.sprite.metadata = {};
       self.sprite.metadata = self;
       self.canvas.add(self.sprite);

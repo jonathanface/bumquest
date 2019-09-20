@@ -15,6 +15,7 @@ export class Globals {
   static EVENT_WEAPON_READY = 'weaponReady';
   static EVENT_DECOR_READY = 'decorReady';
   static EVENT_PATH_WALKED = 'pathWalked';
+  static EVENT_PATH_NODE_WALKED = 'pathNodeWalked';
   
   static OBJECT_TYPE_PLAYER = 1;
   static OBJECT_TYPE_NPC = 2;

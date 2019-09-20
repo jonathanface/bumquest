@@ -222,15 +222,20 @@ export class Player {
   }
   
   adjustZPosition() {
+    console.log('adj');
     let myZ = this.canvas.getObjects().indexOf(this.sprite);
     for (let i=0; i < this.location.decor.length; i++) {
       if (Globals.isIntersecting(this.sprite, this.location.decor[i].sprite)) {
         let decorZ = this.canvas.getObjects().indexOf(this.location.decor[i].sprite);
-        if (this.location.decor[i].getY() <= this.getY() && decorZ >= myZ) {
-          this.sprite.moveTo(decorZ+1);
+        //console.log(this.location.decor[i].getY(), 'vs', this.getY());
+        //console.log(decorZ, 'vs', myZ);
+        if (this.location.decor[i].getY() <= this.getY()) {
+          this.sprite.bringToFront();
+          //this.sprite.moveTo(decorZ+1);
         } else if (this.location.decor[i].getY() > this.getY() && decorZ <= myZ) {
           this.sprite.moveTo(decorZ-1);
         }
+        //console.log('after', this.canvas.getObjects().indexOf(this.sprite));
       }
     }
     for (let i=0; i < this.location.actors.length; i++) {
@@ -298,10 +303,9 @@ export class Player {
   }
   
   cancelAnimations() {
-    console.log('clear animations');
     clearInterval(this.animInterval);
     this.currentPath = null;
-    this.bumDefault.removeEventListener(Globals.EVENT_PATH_WALKED, this.walkCallback);
+    this.bumDefault.removeEventListener(Globals.EVENT_PATH_NODE_WALKED, this.walkCallback);
     this.runningWalkLeft = false;
     this.runningWalkRight = false;
     this.runningWalkUp = false;
@@ -311,7 +315,6 @@ export class Player {
   }
   
   animateWalk(x, y) {
-    console.log('check anim');
     let self = this;
 
     this.scaleSpriteByYCoord(y);
@@ -350,7 +353,7 @@ export class Player {
                               self.remainingMoves--;
                               self.updateMovementPointsDisplay(self.remainingMoves);
                             }
-                            self.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_WALKED));
+                            self.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_NODE_WALKED));
                           }
                         });
 
@@ -358,18 +361,20 @@ export class Player {
   }
   
   cycleAnimation() {
-    console.log('path segment walked');
     this.animationCount++;
     //console.log(this.animationCount, this.currentPath.length);
     if (this.animationCount < this.currentPath.length) {
       this.animateWalk(this.currentPath[this.animationCount][0], this.currentPath[this.animationCount][1]);
     } else {
       console.log('entire path walked');
+      this.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_WALKED));
       this.cancelAnimations();
     }
   }
   
   async openContainer(data) {
+    let decorReady = this.adjustZPosition.bind(this);
+    data.img.removeEventListener(Globals.EVENT_DECOR_READY, decorReady);
     this.bumDefault.removeEventListener(Globals.EVENT_PATH_WALKED, this.walkActionCallback);
     this.walkActionCallback = null;
     let self = this;
@@ -378,12 +383,31 @@ export class Player {
     });
     if (containerInfo) {
       data.imgURL = containerInfo.img_open;
+      console.log('set img to', data.imgURL);
+      data.open = true;
+      console.log('dimg', data.img);
+      data.img.addEventListener(Globals.EVENT_DECOR_READY, decorReady);
+      data.render();
+    }
+  }
+  
+  async closeContainer(data) {
+    console.log('data', data);
+    this.bumDefault.removeEventListener(Globals.EVENT_PATH_WALKED, this.walkActionCallback);
+    this.walkActionCallback = null;
+    let self = this;
+    let containerInfo = await this.parent.queryBackend('PUT', Globals.API_DIR + 'container/' + data.id + '/close').catch((err) => {
+      self.parent.print(err.message);
+    });
+    if (containerInfo) {
+      data.imgURL = containerInfo.img_closed;
+      console.log('set img to', data.imgURL);
+      data.open = false;
       data.render();
     }
   }
   
   tryToOpen(data) {
-    console.log('data', data);
     if (!this.location.combatOn) {
       this.walkActionCallback = this.openContainer.bind(this, data)
       this.bumDefault.addEventListener(Globals.EVENT_PATH_WALKED, this.walkActionCallback);
@@ -391,15 +415,24 @@ export class Player {
     }
   }
   
-  walkToObject(target) {
+  tryToClose(data) {
     if (!this.location.combatOn) {
-      this.cancelAnimations();
+      this.walkActionCallback = this.closeContainer.bind(this, data)
+      this.bumDefault.addEventListener(Globals.EVENT_PATH_WALKED, this.walkActionCallback);
+      this.walkToObject(data);
+    }
+  }
+  
+  walkToObject(target) {
+    let self = this;
+    if (!this.location.combatOn) {
       let start = {};
       start.x = this.getX();
       start.y = this.getY();
       let end = {};
       end.x = target.getX();
       end.y = target.getY();
+      console.log('end', end.x, end.y);
       if (this.location.walkPath.isPointInPath(end.x, end.y)) {
         let path = this.location.findPath(start, end);
         if (path && path.length) {
@@ -408,6 +441,8 @@ export class Player {
             path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
           }
           this.walkRoute(path);
+        } else {
+          self.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_WALKED));
         }
       }
     }
@@ -418,7 +453,7 @@ export class Player {
     this.animationCount = 0;
     this.currentPath = path;
     this.walkCallback = this.cycleAnimation.bind(this)
-    this.bumDefault.addEventListener(Globals.EVENT_PATH_WALKED, this.walkCallback);
+    this.bumDefault.addEventListener(Globals.EVENT_PATH_NODE_WALKED, this.walkCallback);
     
     let x = path[path.length-1][0];
     let y = path[path.length-1][1];
