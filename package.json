@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "minify": "uglifyjs static/js/dist/bundle.js -o static/js/dist/bundle.min.js",
-    "build": "browserify -d static/js/src/Globals.jsx static/js/src/main.jsx static/js/src/Area.jsx static/js/src/Player.jsx static/js/src/Landing.jsx static/js/src/Weapon.jsx static/js/src/CombatManager.jsx -o static/js/dist/bundle.js -t [ babelify --presets [ @babel/preset-env @babel/preset-react ] --plugins [ @babel/plugin-proposal-class-properties ] ]"
+    "build": "browserify -d static/js/src/Globals.jsx static/js/src/main.jsx static/js/src/Area.jsx static/js/src/Player.jsx static/js/src/Landing.jsx static/js/src/Weapon.jsx static/js/src/CombatManager.jsx static/js/src/AnimationWorker.jsx static/js/src/WebWorker.jsx -o static/js/dist/bundle.js -t [ babelify --presets [ @babel/preset-env @babel/preset-react ] --plugins [ @babel/plugin-proposal-class-properties ] ]"
   },
   "keywords": [],
   "author": "Jonathan Face",
@@ -24,7 +24,7 @@
     "extend": "^2.0.2",
     "pathfinding": "^0.4.18",
     "uglify-js": "^3.6.0",
-    "uglifyify": "^5.0.1"
+    "uglifyify": "^5.0.2"
   },
   "repository": {
     "type": "git",

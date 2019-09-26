@@ -48,6 +48,11 @@ export class CombatManager {
     if (this.player.equipped.type != Globals.OBJECT_TYPE_WEAPON) {
       return;
     }
+    if (this.player.getX() <= enemy.getX()) {
+      this.player.runAttackAnimation('right');
+    } else {
+      this.player.runAttackAnimation('left');
+    }
     console.log('mv', this.player.remainingMoves, this.player.equipped.speed);
     this.player.remainingMoves -= this.player.equipped.speed;
     this.updateMovementPointsDisplay(this.player.remainingMoves);

@@ -1,6 +1,7 @@
 import {Globals} from './Globals.jsx'
 import {Weapon} from './Weapon.jsx'
 
+
 export class Player {
   
   constructor(id, canvas, parent) {
@@ -154,6 +155,8 @@ export class Player {
     this.walkUpFrames = [];
     this.walkDownFrames = [];
     this.talkFrames = [];
+    this.punchLeftFrames = [];
+    this.punchRightFrames = [];
     
     let dbInfo = await self.parent.queryBackend('GET', Globals.API_DIR + 'animations/' + this.id);
     if (dbInfo) {
@@ -175,6 +178,12 @@ export class Player {
             break;
           case 'talk':
             this.talkFrames.push(img);
+            break;
+          case 'punch_left':
+            this.punchLeftFrames.push(img);
+            break;
+          case 'punch_right':
+            this.punchRightFrames.push(img);
             break;
         }
       }
@@ -263,44 +272,33 @@ export class Player {
     document.querySelector('#movement_points').innerHTML = value;
   }
   
-  runWalkAnimation(dir) {
+  async runAttackAnimation(dir) {
     let frames;
     switch(dir) {
       case 'right':
-        this.runningRightWalk = true;
-        frames = this.walkRightFrames;
+        frames = this.punchRightFrames;
         break;
       case 'left':
-        this.runningLeftWalk = true;
-        frames = this.walkLeftFrames;
-        break;
-      case 'up':
-        this.runningUpWalk = true;
-        frames = this.walkUpFrames;
-        break;
-      case 'down':
-        this.runningDownWalk = true;
-        frames = this.walkDownFrames;
-        break;
-      case 'talk':
-        this.runningTalk = true;
-        frames = this.talkFrames;
+        frames = this.punchLeftFrames;
         break;
     }
+      
     let self = this;
     this.animIndex = 0;
+    clearInterval(this.animInterval);
+    console.log('starting fight animation');
     this.animInterval = setInterval(function() {
       if (self.animIndex >= frames.length) {
-        console.log('runanim int');
         self.animIndex = 0;
+        clearInterval(self.animInterval);
+        self.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_NODE_WALKED));
       }
+      console.log('fighting frame', frames[self.animIndex]);
       self.sprite.setElement(frames[self.animIndex]);
       self.animIndex++;
     }, 250);
-    
-    this.sprite.setElement(frames[this.animIndex]);
-    this.animIndex++;
   }
+
   
   cancelAnimations() {
     clearInterval(this.animInterval);
@@ -407,6 +405,15 @@ export class Player {
     }
   }
   
+  async searchContainer(data) {
+    let containerInfo = await this.parent.queryBackend('GET', Globals.API_DIR + 'container/' + data.id + '/contents').catch((err) => {
+      self.parent.print(err.message);
+    });
+    if (containerInfo) {
+      console.log('cont', containerInfo);
+    }
+  }
+  
   tryToOpen(data) {
     if (!this.location.combatOn) {
       this.walkActionCallback = this.openContainer.bind(this, data)
@@ -423,6 +430,47 @@ export class Player {
     }
   }
   
+  tryToSearch(data) {
+    let self = this;
+    if (!this.location.combatOn) {
+      this.walkActionCallback = async function() {
+        if (!data.open) {
+          let containerInfo = await self.parent.queryBackend('PUT', Globals.API_DIR + 'container/' + data.id + '/open').catch((err) => {
+            self.parent.print(err.message);
+          });
+          if (containerInfo) {
+            let decorReady = self.adjustZPosition.bind(self);
+            data.imgURL = containerInfo.img_open;
+            console.log('set img to', data.imgURL);
+            data.open = true;
+            console.log('dimg', data.img);
+            data.img.addEventListener(Globals.EVENT_DECOR_READY, decorReady);
+            data.render();
+          }
+        }
+        self.searchContainer(data);
+      };
+      this.bumDefault.addEventListener(Globals.EVENT_PATH_WALKED, this.walkActionCallback);
+      this.walkToObject(data);
+    }
+  }
+  
+  findPathResults(type, path) {
+    console.log('????', type, path);
+    if (path && path.length) {
+      for (let i=0; i < path.length; i++) {
+        path[i][0] *= Globals.GRID_SQUARE_WIDTH;
+        path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
+      }
+      console.log('got path', path);
+      if (type == 'walkRoute') {
+        this.walkRoute(path);
+      }
+    } else {
+      this.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_WALKED));
+    }
+  }
+  
   walkToObject(target) {
     let self = this;
     if (!this.location.combatOn) {
@@ -434,18 +482,50 @@ export class Player {
       end.y = target.getY();
       console.log('end', end.x, end.y);
       if (this.location.walkPath.isPointInPath(end.x, end.y)) {
-        let path = this.location.findPath(start, end);
-        if (path && path.length) {
-          for (let i=0; i < path.length; i++) {
-            path[i][0] *= Globals.GRID_SQUARE_WIDTH;
-            path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
-          }
-          this.walkRoute(path);
-        } else {
-          self.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_WALKED));
-        }
+        this.location.findPath(start, end);
+        
       }
     }
+  }
+  
+  runWalkAnimation(dir) {
+    let frames;
+    switch(dir) {
+      case 'right':
+        this.runningRightWalk = true;
+        frames = this.walkRightFrames;
+        break;
+      case 'left':
+        this.runningLeftWalk = true;
+        frames = this.walkLeftFrames;
+        break;
+      case 'up':
+        this.runningUpWalk = true;
+        frames = this.walkUpFrames;
+        break;
+      case 'down':
+        this.runningDownWalk = true;
+        frames = this.walkDownFrames;
+        break;
+      case 'talk':
+        this.runningTalk = true;
+        frames = this.talkFrames;
+        break;
+    }
+    let self = this;
+    this.animIndex = 0;
+    clearInterval(this.animInterval);
+    this.animInterval = setInterval(function() {
+      if (self.animIndex >= frames.length) {
+        console.log('runanim int');
+        self.animIndex = 0;
+      }
+      self.sprite.setElement(frames[self.animIndex]);
+      self.animIndex++;
+    }, 250);
+    
+    this.sprite.setElement(frames[this.animIndex]);
+    this.animIndex++;
   }
   
   walkRoute(path) {
@@ -461,6 +541,9 @@ export class Player {
     if (x < this.getX()) {
       this.runWalkAnimation('left');
     } else if (x > this.getX()) {
+      let obj = {};
+      obj.command = 'walk';
+      //this.AnimationWorker.postMessage(obj);
       this.runWalkAnimation('right');
     } else if (y < this.getY()) {
       this.runWalkAnimation('up');
@@ -468,10 +551,6 @@ export class Player {
       this.runWalkAnimation('down');
     }
     this.animateWalk(path[this.animationCount][0], path[this.animationCount][1]);
-    
-    //this.animatingCount = 0;
-    
-    //this.animateWalk(path);
   }
 
 }

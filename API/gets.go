@@ -181,6 +181,52 @@ func FetchAnimationCells(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusOK, results)
 }
 
+func FetchContainerContents(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	containerID := vars["containerid"]
+	if containerID == "" {
+		RespondWithError(w, http.StatusBadRequest, "Missing containerID")
+		return
+	}
+	ctx, err := processConnectionError(bum_db)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	type Item struct {
+		Id           string `json:"id"`
+		Name         string `json:"name"`
+		Descr        string `json:"description"`
+		Icon         string `json:"img"`
+		Contained_by string `json:"contained_by"`
+	}
+	query := "SELECT * FROM items WHERE contained_by=?"
+	rows, err := bum_db.QueryContext(ctx, query, containerID)
+	defer rows.Close()
+	if processSQLError(w, err) {
+		return
+	}
+	var results []Item
+	for rows.Next() {
+		item := Item{}
+		err := rows.Scan(&item.Id,
+			&item.Name,
+			&item.Icon,
+			&item.Contained_by,
+			&item.Descr)
+		if processSQLError(w, err) {
+			return
+		}
+		results = append(results, item)
+	}
+
+	if len(results) == 0 {
+		RespondWithError(w, http.StatusNotFound, "No results")
+		return
+	}
+	respondWithJson(w, http.StatusOK, results)
+}
+
 func FetchWeapon(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	weaponID := vars["weaponid"]

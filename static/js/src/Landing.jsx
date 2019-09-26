@@ -133,7 +133,16 @@ export class Landing extends React.Component {
       };
       ul.appendChild(li);
     }
-    
+    if (element.metadata.container) {
+      li = document.createElement('li');
+      li.appendChild(document.createTextNode('Search'));
+      li.oncontextmenu = function() { return false; };
+      li.onclick = function() {
+        self.state.player.tryToSearch(element.metadata);
+        self.removeAllContextMenus();
+      };
+      ul.appendChild(li);
+    }
     div.appendChild(ul);
     document.body.appendChild(div);
     let timer = setTimeout(function() {

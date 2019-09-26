@@ -137,7 +137,7 @@ export class NPC {
         if (path) {
           path = path.splice(0, path.length-1);
         }
-        if (Math.ceil(path.length/4) > self.parent.state.currentArea.getPlayer().equipped.range) {
+        if (path && Math.ceil(path.length/4) > self.parent.state.currentArea.getPlayer().equipped.range) {
           self.parent.print("You're out of range.");
           return;
         }

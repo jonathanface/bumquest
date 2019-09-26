@@ -1,6 +1,8 @@
 import PF from 'pathfinding';
 import {Globals} from './Globals.jsx'
 import {CombatManager} from './CombatManager.jsx'
+import worker from './AnimationWorker.jsx';
+import WebWorker from './WebWorker.jsx';
 
 export class Area {
   
@@ -40,6 +42,8 @@ export class Area {
       allowDiagonal: true,
       dontCrossCorners:false
     });
+    
+    
   }
   
   renderBackground() {
@@ -50,7 +54,7 @@ export class Area {
       self.canvas.renderAll();
     });
   }
-  
+  /*
   generateWalkGrid() {
     let scaleW = Math.ceil(this.width/Globals.GRID_SQUARE_WIDTH*4);
     let scaleH = Math.ceil(this.height/Globals.GRID_SQUARE_HEIGHT);
@@ -68,7 +72,7 @@ export class Area {
           strokeWidth:1,
           selectable:false,
           evented: false
-        });*/
+        });
         if (this.walkPath.isPointInPath(i*Globals.GRID_SQUARE_WIDTH, s*Globals.GRID_SQUARE_HEIGHT)) {
         //  console.log('pass');
           this.grid.setWalkableAt(i, s, true);
@@ -81,10 +85,29 @@ export class Area {
         //this.canvas.add(rect);
       }
     }
-  }
+  }*/
   
   findPath(start, end) {
     //console.log('frompath', start, 'end', end);
+    let self = this;
+    let obj = {};
+    obj.command = 'findpath';
+    obj.start = start;
+    obj.end = end;
+    obj.width = this.width;
+    obj.height = this.height;
+    obj.gridwidth = Globals.GRID_SQUARE_WIDTH;
+    obj.gridheight = Globals.GRID_SQUARE_HEIGHT;
+    obj.path = this.walkPoints;
+    console.log(obj);
+    this.AnimationWorker = new WebWorker(worker);
+    this.AnimationWorker.addEventListener('message', event => {
+      if (event.data.command == 'path_results') {
+        self.getPlayer().findPathResults(event.data.type, event.data.grid);
+      }
+    });
+    this.AnimationWorker.postMessage(obj);
+    /*
     this.generateWalkGrid();
     try {
       return this.pathfinder.findPath(Math.round(start.x/Globals.GRID_SQUARE_WIDTH), Math.round(start.y/Globals.GRID_SQUARE_HEIGHT),
@@ -92,7 +115,7 @@ export class Area {
     } catch(e) {
       console.log(e);
       return false;
-    }
+    }*/
   }
   
   drawWalkpath() {
@@ -110,7 +133,7 @@ export class Area {
     this.walkPath.globalAlpha = 0;
     this.walkPath.fill();
     this.walkPath.save();
-    this.generateWalkGrid();
+    //this.generateWalkGrid();
     this.walkPath.canvas.onclick = function(event) {
       if (self.getPlayer().targetAcquired) {
         return;
