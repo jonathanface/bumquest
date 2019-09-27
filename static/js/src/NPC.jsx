@@ -132,19 +132,12 @@ export class NPC {
       });
       self.sprite.on('mouseup', function() {
         let enemyPos = {'x':self.getX(), 'y':self.getY()};
-        let path = self.parent.state.currentArea.findPath({'x':self.parent.state.currentArea.getPlayer().getX(),
-                                                           'y':self.parent.state.currentArea.getPlayer().getY()}, enemyPos);
-        if (path) {
-          path = path.splice(0, path.length-1);
-        }
-        if (path && Math.ceil(path.length/4) > self.parent.state.currentArea.getPlayer().equipped.range) {
-          self.parent.print("You're out of range.");
-          return;
-        }
-        if (!self.parent.state.currentArea.combatOn) {
-          self.parent.state.currentArea.enterCombat('player');
-        }
-        self.parent.state.currentArea.combat.handlePlayerAttack(self);
+        let obj = {};
+        obj.command = 'playerCheckRange';
+        obj.npc = self.id;
+        obj.start = {'x':self.parent.state.currentArea.getPlayer().getX(), 'y':self.parent.state.currentArea.getPlayer().getY()};
+        obj.end = enemyPos;
+        self.parent.state.currentArea.findPath(obj);
       });
       this.dispatchEvent(new Event(Globals.EVENT_NPC_READY));
     };

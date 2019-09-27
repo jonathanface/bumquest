@@ -1,7 +1,7 @@
 import PF from 'pathfinding';
 import {Globals} from './Globals.jsx'
 import {CombatManager} from './CombatManager.jsx'
-import worker from './AnimationWorker.jsx';
+import worker from './PathfindWorker.jsx';
 import WebWorker from './WebWorker.jsx';
 
 export class Area {
@@ -38,12 +38,38 @@ export class Area {
     this.combatOn = false;
     
     this.grid = null;
-    this.pathfinder = new PF.DijkstraFinder({
-      allowDiagonal: true,
-      dontCrossCorners:false
+    
+    this.setupPathWorker();
+    
+  }
+  
+  setupPathWorker() {
+    this.PathWorker = new WebWorker(worker);
+    this.PathWorker.postMessage({command:'generateWalkPath', path:this.walkPoints});
+    let self = this;
+    this.PathWorker.addEventListener('message', event => {
+      console.log('got ', event.data.command, 'back from worker');
+      if (event.data.command == 'clickedGround' || event.data.command == 'walkToObject') {
+        self.getPlayer().clickedGroundPathResults(event.data.path);
+      }
+      if (event.data.command == 'combatMouseMove') {
+        console.log('comb', self.combat);
+        self.combat.combatMouseMoveResults(event.data);
+      }
+      if (event.data.command == 'playerCheckRange') {
+        if (event.data.path) {
+          event.data.path = event.data.path.splice(0, event.data.path.length-1);
+        }
+        if (event.data.path && Math.ceil(event.data.path.length/4) > self.getPlayer().equipped.range) {
+          self.parent.print("You're out of range.");
+          return;
+        }
+        if (!self.combatOn) {
+          self.enterCombat('player');
+        }
+        self.combat.handlePlayerAttack(self.combat.getNPCByID(event.data.npc));
+      }
     });
-    
-    
   }
   
   renderBackground() {
@@ -54,59 +80,18 @@ export class Area {
       self.canvas.renderAll();
     });
   }
-  /*
-  generateWalkGrid() {
-    let scaleW = Math.ceil(this.width/Globals.GRID_SQUARE_WIDTH*4);
-    let scaleH = Math.ceil(this.height/Globals.GRID_SQUARE_HEIGHT);
-    this.grid = new PF.Grid(scaleW, scaleH);
-    for (let i=0; i < scaleW; i++) {
-      for (let s=0; s < scaleH; s++) {
-        /*
-        let rect = new fabric.Rect({
-          width:Globals.GRID_SQUARE_WIDTH,
-          height:Globals.GRID_SQUARE_HEIGHT,
-          left:i * Globals.GRID_SQUARE_WIDTH,
-          top:s * Globals.GRID_SQUARE_HEIGHT,
-          fill:'transparent',
-          stroke:'green',
-          strokeWidth:1,
-          selectable:false,
-          evented: false
-        });
-        if (this.walkPath.isPointInPath(i*Globals.GRID_SQUARE_WIDTH, s*Globals.GRID_SQUARE_HEIGHT)) {
-        //  console.log('pass');
-          this.grid.setWalkableAt(i, s, true);
-          
-        } else {
-         // console.log('impass');
-          this.grid.setWalkableAt(i, s, false);
-          //rect.stroke = 'red';
-        }
-        //this.canvas.add(rect);
-      }
-    }
-  }*/
   
-  findPath(start, end) {
+  findPath(obj) {
     //console.log('frompath', start, 'end', end);
     let self = this;
-    let obj = {};
-    obj.command = 'findpath';
-    obj.start = start;
-    obj.end = end;
     obj.width = this.width;
     obj.height = this.height;
     obj.gridwidth = Globals.GRID_SQUARE_WIDTH;
     obj.gridheight = Globals.GRID_SQUARE_HEIGHT;
     obj.path = this.walkPoints;
-    console.log(obj);
-    this.AnimationWorker = new WebWorker(worker);
-    this.AnimationWorker.addEventListener('message', event => {
-      if (event.data.command == 'path_results') {
-        self.getPlayer().findPathResults(event.data.type, event.data.grid);
-      }
-    });
-    this.AnimationWorker.postMessage(obj);
+    //console.log(obj);
+    
+    this.PathWorker.postMessage(obj);
     /*
     this.generateWalkGrid();
     try {
@@ -147,25 +132,11 @@ export class Area {
       end.x = Math.round(event.clientX - bounds.left);
       end.y = Math.round(event.clientY - bounds.top);
       if (self.walkPath.isPointInPath(end.x, end.y)) {
-        let path = self.findPath(start, end);
-        
-        if (path && path.length) {
-          if (self.combatOn) {
-            self.canvas.remove(self.combat.moveLine);
-            self.combat.moveLine = null;
-            self.canvas.remove(self.combat.moveText);
-            self.combat.moveText = null;
-            
-            if (self.getPlayer().isMoving || Math.ceil(path.length/4) > self.getPlayer().remainingMoves) {
-              return;
-            }
-          }
-          for (let i=0; i < path.length; i++) {
-            path[i][0] *= Globals.GRID_SQUARE_WIDTH;
-            path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
-          }
-          self.getPlayer().walkRoute(path);
-        }
+        let obj = {};
+        obj.command = 'clickedGround';
+        obj.start = start;
+        obj.end = end;
+        self.findPath(obj);
       }
     };
     this.loaderImg.dispatchEvent(new Event(Globals.EVENT_AREA_READY));

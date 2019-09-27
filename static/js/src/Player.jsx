@@ -284,19 +284,20 @@ export class Player {
     }
       
     let self = this;
-    this.animIndex = 0;
+    this.animIndex = 1;
     clearInterval(this.animInterval);
     console.log('starting fight animation');
     this.animInterval = setInterval(function() {
       if (self.animIndex >= frames.length) {
-        self.animIndex = 0;
+        self.animIndex = 1;
         clearInterval(self.animInterval);
         self.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_NODE_WALKED));
       }
       console.log('fighting frame', frames[self.animIndex]);
       self.sprite.setElement(frames[self.animIndex]);
+      self.canvas.renderAll();
       self.animIndex++;
-    }, 250);
+    }, 50);
   }
 
   
@@ -321,7 +322,7 @@ export class Player {
                         x - this.width/2,
                         {
                           duration:100,
-                          onChange: this.canvas.renderAll.bind(this.canvas),
+                          onChange: this.canvas.renderAll.bind(self.canvas),
                           abort: function() {
                             if (!self.isMoving) {
                               console.log('cancel');
@@ -335,7 +336,7 @@ export class Player {
                         y - this.height,
                         {
                           duration:100,
-                          onChange: this.canvas.renderAll.bind(this.canvas),
+                          onChange: self.canvas.renderAll.bind(self.canvas),
                           abort: function() {
                             if (!self.isMoving) {
                               console.log('cancel');
@@ -347,7 +348,7 @@ export class Player {
                           onComplete: function() {
                             self.x = x;
                             self.y = y;
-                            if (this.animationCount%4 === 0 && self.parent.state.currentArea.combatOn) {
+                            if (self.animationCount%4 === 0 && self.parent.state.currentArea.combatOn) {
                               self.remainingMoves--;
                               self.updateMovementPointsDisplay(self.remainingMoves);
                             }
@@ -455,17 +456,25 @@ export class Player {
     }
   }
   
-  findPathResults(type, path) {
-    console.log('????', type, path);
+  clickedGroundPathResults(path) {
+    let self = this;
     if (path && path.length) {
+      if (self.location.combatOn) {
+        self.location.canvas.remove(self.location.combat.moveLine);
+        self.location.combat.moveLine = null;
+        self.location.canvas.remove(self.location.combat.moveText);
+        self.location.combat.moveText = null;
+            
+        if (self.isMoving || Math.ceil(path.length/4) > self.remainingMoves) {
+          return;
+        }
+      }
       for (let i=0; i < path.length; i++) {
         path[i][0] *= Globals.GRID_SQUARE_WIDTH;
         path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
       }
       console.log('got path', path);
-      if (type == 'walkRoute') {
-        this.walkRoute(path);
-      }
+      this.walkRoute(path);
     } else {
       this.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_WALKED));
     }
@@ -482,7 +491,11 @@ export class Player {
       end.y = target.getY();
       console.log('end', end.x, end.y);
       if (this.location.walkPath.isPointInPath(end.x, end.y)) {
-        this.location.findPath(start, end);
+        let obj = {};
+        obj.command = 'walkToObject';
+        obj.start = start;
+        obj.end = end;
+        this.location.findPath(obj);
         
       }
     }
@@ -517,7 +530,6 @@ export class Player {
     clearInterval(this.animInterval);
     this.animInterval = setInterval(function() {
       if (self.animIndex >= frames.length) {
-        console.log('runanim int');
         self.animIndex = 0;
       }
       self.sprite.setElement(frames[self.animIndex]);
@@ -541,9 +553,6 @@ export class Player {
     if (x < this.getX()) {
       this.runWalkAnimation('left');
     } else if (x > this.getX()) {
-      let obj = {};
-      obj.command = 'walk';
-      //this.AnimationWorker.postMessage(obj);
       this.runWalkAnimation('right');
     } else if (y < this.getY()) {
       this.runWalkAnimation('up');

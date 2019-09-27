@@ -154,6 +154,7 @@ export class CombatManager {
   }
   
   chooseTarget(npc) {
+    /*
     let lastDist = null;
     let target = null;
     if (npc.team == 3) {
@@ -168,7 +169,7 @@ export class CombatManager {
         }
       }
       return target;
-    }
+    }*/
   }
   
   handleNPCEndTurn(npc) {
@@ -313,6 +314,45 @@ export class CombatManager {
     document.querySelector('#movement_points').innerHTML = value;
   }
 
+  combatMouseMoveResults(obj) {
+    console.log('wtf', obj.path);
+    let self = this;
+    if (obj.path && obj.path.length) {
+      if (!self.moveLine && !self.player.isMoving) {
+        let coords = [obj.start.x, obj.start.y, obj.start.x, obj.start.y];
+        self.moveLine = new fabric.Line(coords, {
+          stroke: 'black',
+          strokeWidth: 3,
+          selectable:false
+        });
+        self.canvas.add(self.moveLine);
+      }
+      if (!self.moveText && !self.player.isMoving) {
+        self.moveText = new fabric.Text('X', { left: 100, top: 100, fontFamily:'verdana,geneva,sans-serif', fontSize:18, fontWeight:'bold', fill:'green'});
+        self.canvas.add(self.moveText);
+      }
+      
+      if (self.moveLine) {
+        self.moveLine.set({'x2':obj.end.x, 'y2':obj.end.y});
+      }
+      let textPos = Object.assign({}, obj.end);
+      //textPos.x += 10;
+      //textPos.y -= 7;
+      console.log('move text', Math.ceil(obj.path.length/4).toString(), 'remmoves', self.player.remainingMoves);
+      self.moveText.set({text:Math.ceil(obj.path.length/4).toString(), left:textPos.x, top:textPos.y});
+      if (obj.path.length/4 <= self.player.remainingMoves) {
+        self.moveLine.set({stroke:'green'});
+        self.moveText.set({fill:'green'});
+      } else {
+        self.moveLine.set({stroke:'red'});
+        self.moveText.set({fill:'red'});
+      }
+    } else {
+      self.moveLine.set({stroke:'black'});
+      self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'black'});
+    }
+  }
+
   addMouseActions() {
     let self = this;
     
@@ -321,11 +361,13 @@ export class CombatManager {
       this.remove(self.moveText);
       self.moveLine = null;
       self.moveText = null;
+      self.area.PathWorker.postMessage({command:'cancelThread'});
     });
 
     this.canvas.on('mouse:move', function(event) {
       let player = self.player;
       if (self.playerTurn) {
+        //self.area.PathWorker.postMessage({command:'cancelThread'});
         if (player.targetAcquired) {
           if (self.moveLine) {
             this.remove(self.moveLine);
@@ -366,20 +408,11 @@ export class CombatManager {
         textPos.y -= 7;
         if (self.moveText && self.moveLine) {
           if (self.area.walkPath.isPointInPath(end.x, end.y)) {
-            let path = self.area.findPath(start, end);
-            if (path && path.length) {
-              self.moveText.set({text:Math.ceil(path.length/4).toString(), left:textPos.x, top:textPos.y});
-              if (path.length/4 <= player.remainingMoves) {
-                self.moveLine.set({stroke:'green'});
-                self.moveText.set({fill:'green'});
-              } else {
-                self.moveLine.set({stroke:'red'});
-                self.moveText.set({fill:'red'});
-              }
-            } else {
-              self.moveLine.set({stroke:'black'});
-              self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'black'});
-            }
+            let obj = {};
+            obj.command = 'combatMouseMove';
+            obj.start = start;
+            obj.end = end;
+            self.area.findPath(obj);
           } else {
             self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'red'});
           }
