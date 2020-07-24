@@ -1,14 +1,15 @@
-import PF from 'pathfinding';
 import {Globals} from './Globals.jsx'
+import {Landing} from './Landing.jsx';
+import PF from 'pathfinding';
 import {CombatManager} from './CombatManager.jsx'
 import worker from './PathfindWorker.jsx';
 import WebWorker from './WebWorker.jsx';
 
-export class Area {
+export class Area extends Landing {
   
-  constructor(id, canvas, parent) {
+  constructor(id, canvas) {
+    super();
     this.id = id;
-    this.parent = parent;
     this.canvas = canvas;
     this.combat = null;
     this.loaderImg = new Image();
@@ -46,68 +47,52 @@ export class Area {
   setupPathWorker() {
     this.PathWorker = new WebWorker(worker);
     this.PathWorker.postMessage({command:'generateWalkPath', path:this.walkPoints});
-    let self = this;
     this.PathWorker.addEventListener('message', event => {
       console.log('got ', event.data.command, 'back from worker');
-      if (event.data.command == 'clickedGround' || event.data.command == 'walkToObject') {
-        self.getPlayer().clickedGroundPathResults(event.data.path);
-      }
-      if (event.data.command == 'combatMouseMove') {
-        console.log('comb', self.combat);
-        self.combat.combatMouseMoveResults(event.data);
-      }
-      if (event.data.command == 'playerCheckRange') {
-        if (event.data.path) {
-          event.data.path = event.data.path.splice(0, event.data.path.length-1);
-        }
-        if (event.data.path && Math.ceil(event.data.path.length/4) > self.getPlayer().equipped.range) {
-          self.parent.print("You're out of range.");
-          return;
-        }
-        if (!self.combatOn) {
-          self.enterCombat('player');
-        }
-        self.combat.handlePlayerAttack(self.combat.getNPCByID(event.data.npc));
+      switch(event.data.command) {
+        case 'clickedGround':
+        case 'walkToObject':
+          player.clickedGroundPathResults(event.data.path);
+          break;
+        case 'combatMouseMove':
+          this.combat.combatMouseMoveResults(event.data);
+          break;
+        case 'playerCheckRange':
+          if (event.data.path) {
+            event.data.path = event.data.path.splice(0, event.data.path.length-1);
+          }
+          if (event.data.path && Math.ceil(event.data.path.length/4) > player.equipped.range) {
+            print("You're out of range.");
+            return;
+          }
+          if (!this.combatOn) {
+            this.enterCombat('player');
+          }
+          this.combat.handlePlayerAttack(self.combat.getNPCByID(event.data.npc));
+          break;
       }
     });
   }
   
   renderBackground() {
-    
-    let self = this;
-    this.canvas.setBackgroundImage('img/areas/area01.png', function() {
-      self.drawWalkpath();
-      self.canvas.renderAll();
+    this.canvas.setBackgroundImage('img/areas/area01.png', () => {
+      console.log('rendering to', this);
+      this.drawWalkpath();
+      this.canvas.renderAll();
     });
   }
   
   findPath(obj) {
-    //console.log('frompath', start, 'end', end);
-    let self = this;
     obj.width = this.width;
     obj.height = this.height;
     obj.gridwidth = Globals.GRID_SQUARE_WIDTH;
     obj.gridheight = Globals.GRID_SQUARE_HEIGHT;
     obj.path = this.walkPoints;
-    //console.log(obj);
-    
     this.PathWorker.postMessage(obj);
-    /*
-    this.generateWalkGrid();
-    try {
-      return this.pathfinder.findPath(Math.round(start.x/Globals.GRID_SQUARE_WIDTH), Math.round(start.y/Globals.GRID_SQUARE_HEIGHT),
-                                      Math.round(end.x/Globals.GRID_SQUARE_WIDTH), Math.round(end.y/Globals.GRID_SQUARE_HEIGHT), this.grid);
-    } catch(e) {
-      console.log(e);
-      return false;
-    }*/
   }
   
   drawWalkpath() {
-
-    let self = this;
     this.walkPath = this.canvas.contextTop;
-    
     this.walkPath.beginPath();
     this.walkPath.moveTo(this.walkPoints[0].x, this.walkPoints[0].y);
     for (let i=1; i < this.walkPoints.length; i++) {
@@ -118,32 +103,27 @@ export class Area {
     this.walkPath.globalAlpha = 0;
     this.walkPath.fill();
     this.walkPath.save();
-    //this.generateWalkGrid();
-    this.walkPath.canvas.onclick = function(event) {
-      if (self.getPlayer().targetAcquired) {
+    this.walkPath.canvas.onclick = (event => {
+      if (player.targetAcquired) {
         return;
       }
-      self.getPlayer().cancelAnimations();
-      let bounds = self.walkPath.canvas.getBoundingClientRect();
+      player.cancelAnimations();
+      let bounds = this.walkPath.canvas.getBoundingClientRect();
       let start = {};
-      start.x = self.parent.state.player.getX();
-      start.y = self.parent.state.player.getY();
+      start.x = player.getX();
+      start.y = player.getY();
       let end = {};
       end.x = Math.round(event.clientX - bounds.left);
       end.y = Math.round(event.clientY - bounds.top);
-      if (self.walkPath.isPointInPath(end.x, end.y)) {
+      if (this.walkPath.isPointInPath(end.x, end.y)) {
         let obj = {};
         obj.command = 'clickedGround';
         obj.start = start;
         obj.end = end;
-        self.findPath(obj);
+        this.findPath(obj);
       }
-    };
+    });
     this.loaderImg.dispatchEvent(new Event(Globals.EVENT_AREA_READY));
-  }
-  
-  getPlayer() {
-    return this.parent.state.player;
   }
   
   endCombatTurn() {
@@ -154,7 +134,6 @@ export class Area {
   
   enterCombat(initiated) {
     let self = this;
-    let player = this.getPlayer();
     console.log('starting combat', player);
     if (player) {
       this.combatOn = true;
