@@ -1,14 +1,14 @@
 import {Globals} from './Globals.jsx'
-import {Landing} from './Landing.jsx';
+import {Main} from './main.jsx';
 import PF from 'pathfinding';
 import {CombatManager} from './CombatManager.jsx'
 import worker from './PathfindWorker.jsx';
 import WebWorker from './WebWorker.jsx';
 
-export class Area extends Landing {
+export class Area {
   
   constructor(id, canvas) {
-    super();
+    //super();
     this.id = id;
     this.canvas = canvas;
     this.combat = null;

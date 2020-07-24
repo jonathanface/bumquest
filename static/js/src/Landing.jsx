@@ -175,34 +175,21 @@ export class Landing extends React.Component {
   }
 
   queryBackend(type, url) {
+    console.log('querying ' + url);
     return new Promise((resolve, reject) => {
       fetch(url, {
         method:type,
         headers: {
           'Content-Type':'application/json'
         }
-      }).then(response => resolve(JSON.parse(this.response)))
-      .catch(error => {
-        reject({'code':this.status, 'message':JSON.parse(this.response).error});
-      });
-    });
-    
-    /*
-    return new Promise(function(resolve, reject) {
-      let xhr = new XMLHttpRequest();
-      xhr.open(type, url, true);
-      xhr.setRequestHeader("Content-Type", "application/json");
-      xhr.onload = function() {
-        switch(this.status) {
-          case 200:
-            resolve(JSON.parse(this.response));
-            break;
-          default:
-            reject({'code':this.status, 'message':JSON.parse(this.response).error});
+      }).then(response => {
+        if (!response.ok) {
+          reject({'code':response.status, 'message':response.statusText});
+        } else {
+          resolve(JSON.parse(this.response));
         }
-      };
-      xhr.send();
-    });*/
+      }).catch(error => console.log(error));
+    }).catch(error => console.log(error));
   }
   
   getTemplate(url, div) {
@@ -213,9 +200,7 @@ export class Landing extends React.Component {
           'Content-Type': 'text/html'
         }
       }).then(response => {div.innerHTML = response; resolve();})
-      .catch(error => {
-        reject();
-      });
+      .catch(error => console.log(error));
     });
   }
   
