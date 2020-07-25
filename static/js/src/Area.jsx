@@ -1,19 +1,19 @@
 import {Globals} from './Globals.jsx'
-import {Main} from './main.jsx';
+import {Engine} from './Engine.jsx';
 import PF from 'pathfinding';
 import {CombatManager} from './CombatManager.jsx'
 import worker from './PathfindWorker.jsx';
 import WebWorker from './WebWorker.jsx';
 
-export class Area {
+export class Area extends Engine {
   
   constructor(id, canvas) {
-    //super();
+    super();
     this.id = id;
-    this.canvas = canvas;
     this.combat = null;
     this.loaderImg = new Image();
     console.log('init area with id', this.id);
+    this.canvas = canvas;
     
     this.walkPoints = [];
     this.walkPoints.push({x:0, y:673});
@@ -41,7 +41,15 @@ export class Area {
     this.grid = null;
     
     this.setupPathWorker();
-    
+  }
+  
+  getPlayer() {
+    for (let i=0; i < this.actors.length; i++) {
+      if (this.actors[i].type = Globals.OBJECT_TYPE_PLAYER) {
+        return this.actors[i];
+      }
+    }
+    return null;
   }
   
   setupPathWorker() {
@@ -52,7 +60,7 @@ export class Area {
       switch(event.data.command) {
         case 'clickedGround':
         case 'walkToObject':
-          player.clickedGroundPathResults(event.data.path);
+          this.getPlayer().clickedGroundPathResults(event.data.path);
           break;
         case 'combatMouseMove':
           this.combat.combatMouseMoveResults(event.data);
@@ -61,7 +69,7 @@ export class Area {
           if (event.data.path) {
             event.data.path = event.data.path.splice(0, event.data.path.length-1);
           }
-          if (event.data.path && Math.ceil(event.data.path.length/4) > player.equipped.range) {
+          if (event.data.path && Math.ceil(event.data.path.length/4) > this.getPlayer().equipped.range) {
             print("You're out of range.");
             return;
           }
@@ -75,6 +83,7 @@ export class Area {
   }
   
   renderBackground() {
+    console.log(this.canvas);
     this.canvas.setBackgroundImage('img/areas/area01.png', () => {
       console.log('rendering to', this);
       this.drawWalkpath();
@@ -88,6 +97,7 @@ export class Area {
     obj.gridwidth = Globals.GRID_SQUARE_WIDTH;
     obj.gridheight = Globals.GRID_SQUARE_HEIGHT;
     obj.path = this.walkPoints;
+    console.log(obj);
     this.PathWorker.postMessage(obj);
   }
   
@@ -104,9 +114,11 @@ export class Area {
     this.walkPath.fill();
     this.walkPath.save();
     this.walkPath.canvas.onclick = (event => {
+      let player = this.getPlayer();
       if (player.targetAcquired) {
         return;
       }
+      console.log('pl', player);
       player.cancelAnimations();
       let bounds = this.walkPath.canvas.getBoundingClientRect();
       let start = {};
@@ -133,12 +145,10 @@ export class Area {
   }
   
   enterCombat(initiated) {
-    let self = this;
-    console.log('starting combat', player);
-    if (player) {
+    console.log('starting combat', this.player);
+    if (this.player) {
       this.combatOn = true;
-      this.combat = new CombatManager(player, this, initiated);
-      
+      this.combat = new CombatManager(this.player, this, initiated);
     }
   }
   

@@ -236,6 +236,7 @@ func FetchWeapon(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, err := processConnectionError(bum_db)
 	if err != nil {
+    log.Println("UNKN");
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

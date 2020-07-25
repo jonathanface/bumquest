@@ -1,15 +1,15 @@
 import {Globals} from './Globals.jsx'
+import {Engine} from './Engine.jsx';
 import {Weapon} from './Weapon.jsx'
 
-
-export class Player {
+export class Player extends Engine {
   
-  constructor(id, canvas, parent) {
+  constructor(id, canvas) {
+    super();
     this.type = Globals.OBJECT_TYPE_PLAYER;
     this.id = id;
-    this.parent = parent;
+    this.location;
     this.canvas = canvas;
-    this.location = null;
     this.name = 'you';
     this.description = "you've seen better days, for sure";
 
@@ -26,47 +26,9 @@ export class Player {
     
     this.animInterval;
     
-    this.stats = {};
-    /*F.A.C.I.A.L.S
-    Fortitude
-    Agility
-    Charisma
-    Intelligence
-    Attention
-    Luck
-    Strength*/
-    this.stats.fortitude = 5;
-    this.stats.agility = 5;
-    this.stats.charisma = 5;
-    this.stats.intelligence = 5;
-    this.stats.attention = 5;
-    this.stats.luck = 5;
-    this.stats.strength = 5;
+    this.sheet = {...this.characterSheet};
     
-    //derived stats
-    this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2);
-    this.stats.tolerance = this.stats.fortitude*5;
-    this.stats.smell = Math.round(this.stats.charisma/2);
-    this.stats.hp = 50 + this.stats.fortitude;
-    this.stats.ac = 5 + Math.round(this.stats.agility/2 + this.stats.fortitude/2);
-    this.stats.critical = this.stats.luck;
-    
-    this.remainingMoves = this.stats.speed;
-    
-    
-    this.traits = {};
-    this.traits.autism = true;
-    
-    this.skills = {};
-    this.skills.beggin = 5 + (this.stats.charisma + this.stats.attention);
-    this.skills.shootin = 5 + (this.stats.attention);
-    this.skills.scrappin = 50 + (this.stats.strength + this.stats.attention);
-    this.skills.wrappin = 5 + (this.stats.attention + this.stats.intelligence);
-    this.skills.fixin = 5 + (this.stats.intelligence + this.stats.agility);
-    this.skills.learnin = 5 + (this.stats.intelligence);
-    this.skills.rantin = 5 + (this.stats.intelligence + this.stats.attention);
-    this.skills.shittin = 5 + (this.stats.fortitude + this.stats.charisma);
-    this.skills.sleepin = 5 + (this.stats.fortitude);
+    this.remainingMoves = this.characterSheet.stats.speed;
 
     this.isMoving = false;
     this.isTargeting = false;
@@ -74,12 +36,11 @@ export class Player {
     
     this.inventory = [];
     this.team = 1;
-    
-    let self = this;
-    let fist = new Weapon('b1ae51b1-c9b9-11e9-bc97-0e49f1f8e77c', this.parent);
-    fist.img.addEventListener(Globals.EVENT_WEAPON_READY, function(event) {
-      self.stow(fist);
-      self.equip(fist);
+
+    let fist = new Weapon('b1ae51b1-c9b9-11e9-bc97-0e49f1f8e77c');
+    fist.img.addEventListener(Globals.EVENT_WEAPON_READY, event = () => {
+      this.stow(fist);
+      this.equip(fist);
     });
     fist.load();
   }
@@ -118,26 +79,26 @@ export class Player {
   
   
   async render() {
-    let self = this;
-    this.bumDefault.onload = function() {
-      self.maxWidth = this.width;
-      self.maxHeight = this.height;
-      self.height = this.height;
-      self.width = this.width;
+    this.bumDefault.onload = () => {
+      this.maxWidth = this.bumDefault.width;
+      this.maxHeight = this.bumDefault.height;
+      this.height = this.bumDefault.height;
+      this.width = this.bumDefault.width;
 
-      self.sprite = new fabric.Image(self.bumDefault, {
-        left: self.imgX,
-        top: self.imgY,
+      this.sprite = new fabric.Image(this.bumDefault, {
+        left: this.imgX,
+        top: this.imgY,
         selectable:false,
         hoverCursor:'arrow'
       });
-      self.sprite.metadata = {};
-      self.sprite.metadata = self;
-      self.sprite.on('mouseover', function() {
-        self.parent.print('You see: ' + Globals.ucwords(self.name) + '.');
+      this.sprite.metadata = {};
+      this.sprite.metadata = this;
+      this.sprite.on('mouseover', () => {
+        this.print('You see: ' + Globals.ucwords(this.name) + '.');
       });
-      self.canvas.add(self.sprite);
-      this.dispatchEvent(new Event(Globals.EVENT_PLAYER_READY));
+      this.canvas.add(this.sprite);
+      console.log('loaded player sprite');
+      this.bumDefault.dispatchEvent(new Event(Globals.EVENT_PLAYER_READY));
     };
     this.bumDefault.src = 'img/people/bum_default.png';
     
@@ -158,7 +119,7 @@ export class Player {
     this.punchLeftFrames = [];
     this.punchRightFrames = [];
     
-    let dbInfo = await self.parent.queryBackend('GET', Globals.API_DIR + 'animations/' + this.id);
+    let dbInfo = await this.queryBackend('GET', Globals.API_DIR + 'animations/' + this.id);
     if (dbInfo) {
       for (let i=0; i < dbInfo.length; i++) {
         let img = new Image();
@@ -191,16 +152,19 @@ export class Player {
   }
 
   resample() {
+    console.log("resample", this);
     this.scaleSpriteByYCoord(this.imgY + this.height);
-      
+    console.log(this.width);
     this.imgX = this.imgX + Math.abs(this.maxWidth - this.width);
     this.imgY = this.imgY + Math.abs(this.maxHeight - this.height);
-
+    
     this.sprite.set('top', this.imgY);
     this.sprite.set('left', this.imgX);
     this.x = this.imgX + this.width/2;
     this.y = this.imgY + this.height;
     this.sprite.setCoords();
+    console.log(this.x, this.y);
+    
   }
   
   calculateSizeFromYPos(y) {
@@ -225,13 +189,13 @@ export class Player {
     this.sprite.scaleToWidth(size.w);
     this.height = size.h;
     this.width = size.w;
+  }
+  
+  moveToFront() {
     
-    //this.y = y + this.height;
-    //this.x = this.x + this.width/2;
   }
   
   adjustZPosition() {
-    console.log('adj');
     let myZ = this.canvas.getObjects().indexOf(this.sprite);
     for (let i=0; i < this.location.decor.length; i++) {
       if (Globals.isIntersecting(this.sprite, this.location.decor[i].sprite)) {
@@ -283,20 +247,19 @@ export class Player {
         break;
     }
       
-    let self = this;
     this.animIndex = 1;
     clearInterval(this.animInterval);
     console.log('starting fight animation');
-    this.animInterval = setInterval(function() {
-      if (self.animIndex >= frames.length) {
-        self.animIndex = 1;
-        clearInterval(self.animInterval);
-        self.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_NODE_WALKED));
+    this.animInterval = setInterval(() => {
+      if (this.animIndex >= frames.length) {
+        this.animIndex = 1;
+        clearInterval(this.animInterval);
+        this.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_NODE_WALKED));
       }
       console.log('fighting frame', frames[self.animIndex]);
-      self.sprite.setElement(frames[self.animIndex]);
-      self.canvas.renderAll();
-      self.animIndex++;
+      this.sprite.setElement(frames[this.animIndex]);
+      this.canvas.renderAll();
+      this.animIndex++;
     }, 50);
   }
 
@@ -314,45 +277,42 @@ export class Player {
   }
   
   animateWalk(x, y) {
-    let self = this;
-
     this.scaleSpriteByYCoord(y);
-    
     this.sprite.animate('left',
                         x - this.width/2,
                         {
                           duration:100,
-                          onChange: this.canvas.renderAll.bind(self.canvas),
-                          abort: function() {
-                            if (!self.isMoving) {
+                          onChange: this.canvas.renderAll.bind(this.canvas),
+                          abort: () => {
+                            if (!this.isMoving) {
                               console.log('cancel');
-                              self.x = self.sprite.aCoords.bl.x + self.width/2;
-                              self.y = self.sprite.aCoords.bl.y;
+                              this.x = this.sprite.aCoords.bl.x + this.width/2;
+                              this.y = this.sprite.aCoords.bl.y;
                             }
-                            return !self.isMoving;
+                            return !this.isMoving;
                           }
                         });
     this.sprite.animate('top',
                         y - this.height,
                         {
                           duration:100,
-                          onChange: self.canvas.renderAll.bind(self.canvas),
-                          abort: function() {
-                            if (!self.isMoving) {
+                          onChange: this.canvas.renderAll.bind(this.canvas),
+                          abort: () => {
+                            if (!this.isMoving) {
                               console.log('cancel');
-                              self.x = self.sprite.aCoords.bl.x + self.width/2;
-                              self.y = self.sprite.aCoords.bl.y;
+                              this.x = this.sprite.aCoords.bl.x + this.width/2;
+                              this.y = this.sprite.aCoords.bl.y;
                             }
-                            return !self.isMoving;
+                            return !this.isMoving;
                           },
-                          onComplete: function() {
-                            self.x = x;
-                            self.y = y;
-                            if (self.animationCount%4 === 0 && self.parent.state.currentArea.combatOn) {
-                              self.remainingMoves--;
-                              self.updateMovementPointsDisplay(self.remainingMoves);
+                          onComplete: () => {
+                            this.x = x;
+                            this.y = y;
+                            if (this.animationCount%4 === 0 && this.location.combatOn) {
+                              this.remainingMoves--;
+                              this.updateMovementPointsDisplay(this.remainingMoves);
                             }
-                            self.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_NODE_WALKED));
+                            this.bumDefault.dispatchEvent(new Event(Globals.EVENT_PATH_NODE_WALKED));
                           }
                         });
 
@@ -376,9 +336,8 @@ export class Player {
     data.img.removeEventListener(Globals.EVENT_DECOR_READY, decorReady);
     this.bumDefault.removeEventListener(Globals.EVENT_PATH_WALKED, this.walkActionCallback);
     this.walkActionCallback = null;
-    let self = this;
-    let containerInfo = await this.parent.queryBackend('PUT', Globals.API_DIR + 'container/' + data.id + '/open').catch((err) => {
-      self.parent.print(err.message);
+    let containerInfo = await this.queryBackend('PUT', Globals.API_DIR + 'container/' + data.id + '/open').catch((err) => {
+      this.print(err.message);
     });
     if (containerInfo) {
       data.imgURL = containerInfo.img_open;
@@ -394,9 +353,8 @@ export class Player {
     console.log('data', data);
     this.bumDefault.removeEventListener(Globals.EVENT_PATH_WALKED, this.walkActionCallback);
     this.walkActionCallback = null;
-    let self = this;
-    let containerInfo = await this.parent.queryBackend('PUT', Globals.API_DIR + 'container/' + data.id + '/close').catch((err) => {
-      self.parent.print(err.message);
+    let containerInfo = await this.queryBackend('PUT', Globals.API_DIR + 'container/' + data.id + '/close').catch((err) => {
+      this.print(err.message);
     });
     if (containerInfo) {
       data.imgURL = containerInfo.img_closed;
@@ -408,7 +366,7 @@ export class Player {
   
   async searchContainer(data) {
     let containerInfo = await this.parent.queryBackend('GET', Globals.API_DIR + 'container/' + data.id + '/contents').catch((err) => {
-      self.parent.print(err.message);
+      this.print(err.message);
     });
     if (containerInfo) {
       console.log('cont', containerInfo);
@@ -432,15 +390,14 @@ export class Player {
   }
   
   tryToSearch(data) {
-    let self = this;
     if (!this.location.combatOn) {
-      this.walkActionCallback = async function() {
+      this.walkActionCallback = async() => {
         if (!data.open) {
-          let containerInfo = await self.parent.queryBackend('PUT', Globals.API_DIR + 'container/' + data.id + '/open').catch((err) => {
-            self.parent.print(err.message);
+          let containerInfo = await this.queryBackend('PUT', Globals.API_DIR + 'container/' + data.id + '/open').catch((err) => {
+            this.print(err.message);
           });
           if (containerInfo) {
-            let decorReady = self.adjustZPosition.bind(self);
+            let decorReady = this.adjustZPosition.bind(this);
             data.imgURL = containerInfo.img_open;
             console.log('set img to', data.imgURL);
             data.open = true;
@@ -449,7 +406,7 @@ export class Player {
             data.render();
           }
         }
-        self.searchContainer(data);
+        this.searchContainer(data);
       };
       this.bumDefault.addEventListener(Globals.EVENT_PATH_WALKED, this.walkActionCallback);
       this.walkToObject(data);
@@ -457,15 +414,14 @@ export class Player {
   }
   
   clickedGroundPathResults(path) {
-    let self = this;
     if (path && path.length) {
-      if (self.location.combatOn) {
-        self.location.canvas.remove(self.location.combat.moveLine);
-        self.location.combat.moveLine = null;
-        self.location.canvas.remove(self.location.combat.moveText);
-        self.location.combat.moveText = null;
+      if (this.location.combatOn) {
+        this.location.canvas.remove(this.location.combat.moveLine);
+        this.location.combat.moveLine = null;
+        this.location.canvas.remove(this.location.combat.moveText);
+        this.location.combat.moveText = null;
             
-        if (self.isMoving || Math.ceil(path.length/4) > self.remainingMoves) {
+        if (this.isMoving || Math.ceil(path.length/4) > this.remainingMoves) {
           return;
         }
       }
@@ -481,7 +437,6 @@ export class Player {
   }
   
   walkToObject(target) {
-    let self = this;
     if (!this.location.combatOn) {
       let start = {};
       start.x = this.getX();
@@ -525,15 +480,14 @@ export class Player {
         frames = this.talkFrames;
         break;
     }
-    let self = this;
     this.animIndex = 0;
     clearInterval(this.animInterval);
-    this.animInterval = setInterval(function() {
-      if (self.animIndex >= frames.length) {
-        self.animIndex = 0;
+    this.animInterval = setInterval(() => {
+      if (this.animIndex >= frames.length) {
+        this.animIndex = 0;
       }
-      self.sprite.setElement(frames[self.animIndex]);
-      self.animIndex++;
+      this.sprite.setElement(frames[this.animIndex]);
+      this.animIndex++;
     }, 250);
     
     this.sprite.setElement(frames[this.animIndex]);

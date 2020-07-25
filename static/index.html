@@ -1,18 +1,37 @@
 <html lang="en-us">
   <head>
     <title>BumQuest</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://fonts.googleapis.com/css?family=Share+Tech+Mono&display=swap" rel="stylesheet"> 
-    <link type="text/css" rel="stylesheet" href="css/main.css">
-    <link type="text/css" rel="stylesheet" href="css/controls.css">
-    <link type="text/css" rel="stylesheet" href="css/sheet.css">
-    <script src="https://kit.fontawesome.com/84103f0cd1.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/3.2.0/fabric.min.js"></script>
-    
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link href="https://fonts.googleapis.com/css?family=Share+Tech+Mono&display=swap" rel="stylesheet"/> 
+    <link type="text/css" rel="stylesheet" href="css/main.css/">
+    <link type="text/css" rel="stylesheet" href="css/controls.css/">
+    <link type="text/css" rel="stylesheet" href="css/sheet.css"/>
+    <script src="https://kit.fontawesome.com/84103f0cd1.js"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/3.2.0/fabric.min.js"/>
+    <script src="/js/dist/bundle.js" />
   <body>
-    <div id="root"></div>
-    <script type="text/javascript" src="/js/dist/bundle.js"></script>
+    <div>
+      <canvas id="c" width="1024" height="768"></canvas>
+      <div class="controls">
+        <div class="console"></div>
+        <div class="vertical_bar">
+          <a onclick="callCharacterSheet()">INFO</a>
+          <a onclick="triggerEndTurn();">END TURN</a>
+          <a>POCKETS</a>
+        </div>
+        <div class="center_stats">
+          <label for="movement_points">Movement Points:</label>
+          <span id="movement_points"></span>
+          <div class="weaponBox">
+            <a>
+              <img class="equipped" /> <!--onClick={this.enterTargetingMode.bind(this)}--> 
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <noscript>This is utterly unusable without Javascript. Welcome to 2005.</noscript>
   </body>
 </html>

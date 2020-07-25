@@ -1,14 +1,15 @@
 import {Globals} from './Globals.jsx'
+import {Engine} from './Engine.jsx';
 import {Weapon} from './Weapon.jsx'
 
-export class NPC {
+export class NPC extends Engine {
   
-  constructor(id, canvas, parent) {
+  constructor(id, canvas) {
+    super();
     this.type = Globals.OBJECT_TYPE_NPC;
     this.id = id;
     this.name = 'some asshole';
     this.description = 'someone who defies description';
-    this.parent = parent;
     this.canvas = canvas;
     this.location = null;
 
@@ -22,55 +23,17 @@ export class NPC {
     this.maxWidth = 0;
     this.animatingCount = 0;
     this.npcDefault = new Image();
-    
-    this.stats = {};
-    /*F.A.C.I.A.L.S
-    Fortitude
-    Agility
-    Charisma
-    Intelligence
-    Attention
-    Luck
-    Strength*/
-    this.stats.fortitude = 5;
-    this.stats.agility = 5;
-    this.stats.charisma = 5;
-    this.stats.intelligence = 5;
-    this.stats.attention = 5;
-    this.stats.luck = 5;
-    this.stats.strength = 5;
-    
-    //derived stats
-    this.stats.speed = (this.stats.agility/2) + (this.stats.attention/2);
-    this.stats.tolerance = this.stats.fortitude*5;
-    this.stats.smell = Math.round(this.stats.charisma/2);
-    this.stats.hp = 50 + this.stats.fortitude;
-    this.stats.ac = 5 + Math.round(this.stats.agility/2 + this.stats.fortitude/2);
-    
-    this.remainingMoves = this.stats.speed;
-    
-    this.skills = {};
-    this.skills.beggin = 5 + (this.stats.charisma + this.stats.attention);
-    this.skills.shootin = 5 + (this.stats.attention);
-    this.skills.scrappin = 5 + (this.stats.strength + this.stats.attention);
-    this.skills.wrappin = 5 + (this.stats.attention + this.stats.intelligence);
-    this.skills.fixin = 5 + (this.stats.intelligence + this.stats.agility);
-    this.skills.learnin = 5 + (this.stats.intelligence);
-    this.skills.rantin = 5 + (this.stats.intelligence + this.stats.attention);
-    this.skills.shittin = 5 + (this.stats.fortitude + this.stats.charisma);
-    this.skills.sleepin = 5 + (this.stats.fortitude);
-    
+    this.sheet = {...this.characterSheet};
     this.team = 3;
     this.targetAcquired = null;
     this.isMoving = false;
     this.usingMelee = true;
     this.inventory = [];
     
-    let self = this;
-    let fist = new Weapon('b1ae51b1-c9b9-11e9-bc97-0e49f1f8e77c', this.parent);
-    fist.img.addEventListener(Globals.EVENT_WEAPON_READY, function(event) {
-      self.stow(fist);
-      self.equip(fist);
+    let fist = new Weapon('b1ae51b1-c9b9-11e9-bc97-0e49f1f8e77c');
+    fist.img.addEventListener(Globals.EVENT_WEAPON_READY, event = () => {
+      this.equip(fist);
+      this.stow(fist);
     });
     fist.load();
   }
@@ -102,44 +65,42 @@ export class NPC {
   }
   
   render() {
-    let self = this;
-    
-    this.npcDefault.onload = function() {
-      self.maxWidth = this.width;
-      self.maxHeight = this.height;
-      self.height = this.height;
-      self.width = this.width;
+    this.npcDefault.onload = () => {
+      this.maxWidth = this.npcDefault.width;
+      this.maxHeight = this.npcDefault.height;
+      this.height = this.npcDefault.height;
+      this.width = this.npcDefault.width;
 
-      self.sprite = new fabric.Image(self.npcDefault, {
-        left: self.imgX,
-        top: self.imgY,
+      this.sprite = new fabric.Image(this.npcDefault, {
+        left: this.imgX,
+        top: this.imgY,
         selectable:false,
         hoverCursor:'arrow'
       });
-      self.sprite.metadata = {};
-      self.sprite.metadata = self;
-      self.canvas.add(self.sprite);
-      self.sprite.on('mouseover', function() {
-        self.parent.print('You see: ' + Globals.ucwords(self.name) + '.');
-        if (self.parent.state.currentArea.combatOn || self.parent.state.currentArea.getPlayer().isTargeting) {
-          self.parent.state.currentArea.getPlayer().targetAcquired = this;
+      this.sprite.metadata = {};
+      this.sprite.metadata = this;
+      this.canvas.add(this.sprite);
+      this.sprite.on('mouseover', () => {
+        this.print('You see: ' + Globals.ucwords(this.name) + '.');
+        if (this.location.combatOn || this.location.getPlayer().isTargeting) {
+          this.location.getPlayer().targetAcquired = this;
           this.hoverCursor='crosshair';
         }
       });
-      self.sprite.on('mouseout', function() {
-        self.parent.state.currentArea.getPlayer().targetAcquired = null;
+      this.sprite.on('mouseout', () => {
+        this.location.getPlayer().targetAcquired = null;
         this.hoverCursor='arrow';
       });
-      self.sprite.on('mouseup', function() {
-        let enemyPos = {'x':self.getX(), 'y':self.getY()};
+      this.sprite.on('mouseup', () => {
+        let enemyPos = {'x':this.getX(), 'y':this.getY()};
         let obj = {};
         obj.command = 'playerCheckRange';
-        obj.npc = self.id;
-        obj.start = {'x':self.parent.state.currentArea.getPlayer().getX(), 'y':self.parent.state.currentArea.getPlayer().getY()};
+        obj.npc = this.id;
+        obj.start = {'x':this.location.getPlayer().getX(), 'y':this.location.getPlayer().getY()};
         obj.end = enemyPos;
-        self.parent.state.currentArea.findPath(obj);
+        this.location.findPath(obj);
       });
-      this.dispatchEvent(new Event(Globals.EVENT_NPC_READY));
+      this.npcDefault.dispatchEvent(new Event(Globals.EVENT_NPC_READY));
     };
     
     this.npcDefault.src = 'img/people/generic_enemy.png';
@@ -155,7 +116,6 @@ export class NPC {
   }
   
   resample() {
-    console.log('smple', this);
     this.scaleSpriteByYCoord(this.imgY + this.height);
       
     this.imgX = this.imgX + Math.abs(this.maxWidth - this.width);
@@ -165,7 +125,6 @@ export class NPC {
     this.sprite.set('left', this.imgX);
     this.x = this.imgX + this.width/2;
     this.y = this.imgY + this.height;
-    console.log(this.x, this.y);
     this.sprite.setCoords();
   }
   
@@ -239,53 +198,51 @@ export class NPC {
   }
   
   animateWalk(path, callback) {
-    let self = this;
-    
-    if (self.animatingCount < path.length) {
-      if (path[self.animatingCount][0] < self.getX()) {
-        self.sprite.setElement(self.npcLeft);
-      } else if (path[self.animatingCount][0] > self.getX()) {
-        self.sprite.setElement(self.npcRight);
-      } else if (path[self.animatingCount][1] < self.getY()) {
-        self.sprite.setElement(self.npcUp);
-      } else if (path[self.animatingCount][0] > self.getY()) {
-        self.sprite.setElement(self.npcDefault);
+    if (this.animatingCount < path.length) {
+      if (path[this.animatingCount][0] < this.getX()) {
+        this.sprite.setElement(this.npcLeft);
+      } else if (path[this.animatingCount][0] > this.getX()) {
+        this.sprite.setElement(this.npcRight);
+      } else if (path[this.animatingCount][1] < this.getY()) {
+        this.sprite.setElement(this.npcUp);
+      } else if (path[this.animatingCount][0] > this.getY()) {
+        this.sprite.setElement(this.npcDefault);
       }
       
-      //console.log('mv', path[self.animatingCount][0] - self.width/2, path[self.animatingCount][1] - self.height);
-      self.scaleSpriteByYCoord(path[self.animatingCount][1]);
-      self.sprite.animate('left', path[self.animatingCount][0] - self.width/2, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas) });
-      self.sprite.animate('top', path[self.animatingCount][1] - self.height, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas), onComplete: function() {
-        self.animatingCount++;
-        if (self.animatingCount%4 === 0) {
-          self.remainingMoves--;
-          console.log('rem', self.remainingMoves);
+      //console.log('mv', path[this.animatingCount][0] - this.width/2, path[this.animatingCount][1] - this.height);
+      this.scaleSpriteByYCoord(path[this.animatingCount][1]);
+      this.sprite.animate('left', path[this.animatingCount][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
+      this.sprite.animate('top', path[this.animatingCount][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas), onComplete: () => {
+        this.animatingCount++;
+        if (this.animatingCount%4 === 0) {
+          this.remainingMoves--;
+          console.log('rem', this.remainingMoves);
         }
-        self.animateWalk(path, callback);
+        this.animateWalk(path, callback);
       }});
     } else {
-      self.remainingMoves--;
+      this.remainingMoves--;
       
       if (path[path.length-1][0] < path[path.length-2][0]) {
-        self.sprite.setElement(self.npcLeft);
+        this.sprite.setElement(this.npcLeft);
       } else if (path[path.length-1][0] > path[path.length-2][0]) {
-        self.sprite.setElement(self.npcRight);
+        this.sprite.setElement(this.npcRight);
       } else if (path[path.length-1][1] < path[path.length-2][1]) {
-        self.sprite.setElement(self.npcUp);
+        this.sprite.setElement(this.npcUp);
       } else if (path[path.length-1][1] > path[path.length-2][1]) {
-        self.sprite.setElement(self.npcDefault);
+        this.sprite.setElement(this.npcDefault);
       } else {
-        self.sprite.setElement(self.npcDefault);
+        this.sprite.setElement(this.npcDefault);
       }
-      self.x = path[path.length-1][0];
-      self.y = path[path.length-1][1];
-      self.scaleSpriteByYCoord(path[path.length-1][1]);
-      self.sprite.animate('left', path[path.length-1][0] - self.width/2, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas) });
-      self.sprite.animate('top', path[path.length-1][1] - self.height, {duration:100, onChange: self.canvas.renderAll.bind(self.canvas)});
+      this.x = path[path.length-1][0];
+      this.y = path[path.length-1][1];
+      this.scaleSpriteByYCoord(path[path.length-1][1]);
+      this.sprite.animate('left', path[path.length-1][0] - this.width/2, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas) });
+      this.sprite.animate('top', path[path.length-1][1] - this.height, {duration:100, onChange: this.canvas.renderAll.bind(this.canvas)});
       if (callback) {
         callback();
       }
-      self.isMoving = false;
+      this.isMoving = false;
     }
     this.adjustZPosition();
   }

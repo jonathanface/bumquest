@@ -1,15 +1,16 @@
 import {Globals} from './Globals.jsx'
+import {Engine} from './Engine.jsx';
 
-export class Decor {
+export class Decor extends Engine {
   
-  constructor(data, canvas, parent) {
+  constructor(data, canvas) {
+    super();
     this.type = Globals.OBJECT_TYPE_DECOR;
     this.id = data.id;
     this.name = data.name;
     this.description = data.descr;
-    this.parent = parent;
     this.canvas = canvas;
-    this.location = data.location;
+    this.location;
     this.imgURL = data.img;
     
     this.container = data.container;
@@ -26,37 +27,36 @@ export class Decor {
   }
   
   render() {
-    let self = this;
-    
-    this.img.onload = function() {
-      self.maxWidth = this.width;
-      self.maxHeight = this.height;
-      self.height = this.height;
-      self.width = this.width;
-      if (!self.sprite) {
-        self.sprite = new fabric.Image(self.img, {
-          left: self.orgX,
-          top: self.orgY,
+ 
+    this.img.onload = () => {
+      this.maxWidth = this.img.width;
+      this.maxHeight = this.img.height;
+      this.height = this.img.height;
+      this.width = this.img.width;
+      if (!this.sprite) {
+        this.sprite = new fabric.Image(this.img, {
+          left: this.orgX,
+          top: this.orgY,
           selectable:false,
           hoverCursor:'arrow'
         });
       }
-      self.x = self.orgX + this.width/2;
-      self.y = self.orgY + this.height;
-      self.sprite.metadata = {};
-      self.sprite.metadata = self;
-      self.canvas.add(self.sprite);
-      self.sprite.on('mouseover', function() {
-        self.parent.print('You see: '  + Globals.ucwords(self.name) + '.');;
+      this.x = this.orgX + this.width/2;
+      this.y = this.orgY + this.height;
+      this.sprite.metadata = {};
+      this.sprite.metadata = this;
+      this.canvas.add(this.sprite);
+      this.sprite.on('mouseover', () => {
+        this.print('You see: '  + Globals.ucwords(this.name) + '.');
       });
-      self.sprite.on('mouseout', function() {
+      this.sprite.on('mouseout', () => {
         
       });
-      self.sprite.on('mouseup', function() {
+      this.sprite.on('mouseup', () => {
         
       });
-      self.canvas.add(self.sprite);
-      this.dispatchEvent(new Event(Globals.EVENT_DECOR_READY));
+      this.canvas.add(this.sprite);
+      this.img.dispatchEvent(new Event(Globals.EVENT_DECOR_READY));
     };
     this.img.src = 'img/objects/' + this.imgURL;
   }
