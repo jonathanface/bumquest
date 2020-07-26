@@ -93,9 +93,6 @@ export class Player extends Engine {
       });
       this.sprite.metadata = {};
       this.sprite.metadata = this;
-      this.sprite.on('mouseover', () => {
-        this.print('You see: ' + Globals.ucwords(this.name) + '.');
-      });
       this.canvas.add(this.sprite);
       console.log('loaded player sprite');
       this.bumDefault.dispatchEvent(new Event(Globals.EVENT_PLAYER_READY));

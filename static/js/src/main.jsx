@@ -42,6 +42,7 @@ window.onload = function() {
             decor.location = engine.currentArea;
             decor.render();
             engine.currentArea.decor.push(decor);
+            
           }
           let npcInfo = await engine.queryBackend('GET', Globals.API_DIR + 'area/' + engine.currentArea.id + '/npcs');
           if (npcInfo) {
@@ -67,19 +68,7 @@ window.onload = function() {
       });
       engine.currentArea.renderBackground();
       
-      document.querySelector('.upper-canvas').oncontextmenu = function(event) {
-        event.preventDefault();
-        let objectFound = false;
-        let clickPoint = new fabric.Point(event.offsetX, event.offsetY);
-        let clickedObjects = [];
-        engine.canvas.forEachObject(function (obj) {
-          if (obj.containsPoint(clickPoint)) {
-            clickedObjects.push(obj);
-          }
-        });
-        clickedObjects.sort((a, b) => (engine.canvas.getObjects().indexOf(a) < engine.canvas.getObjects().indexOf(b)) ? 1 : -1)
-        engine.renderRightClickOptions(event, clickedObjects[0]);
-      }
+      
       engine.print('You enter <b>' + dbInfo.name.toLowerCase() + '</b>.');
       engine.print(dbInfo.description, true);
     }

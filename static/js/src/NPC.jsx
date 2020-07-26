@@ -32,8 +32,8 @@ export class NPC extends Engine {
     
     let fist = new Weapon('b1ae51b1-c9b9-11e9-bc97-0e49f1f8e77c');
     fist.img.addEventListener(Globals.EVENT_WEAPON_READY, event = () => {
-      this.equip(fist);
       this.stow(fist);
+      this.equip(fist);
     });
     fist.load();
   }
@@ -80,26 +80,6 @@ export class NPC extends Engine {
       this.sprite.metadata = {};
       this.sprite.metadata = this;
       this.canvas.add(this.sprite);
-      this.sprite.on('mouseover', () => {
-        this.print('You see: ' + Globals.ucwords(this.name) + '.');
-        if (this.location.combatOn || this.location.getPlayer().isTargeting) {
-          this.location.getPlayer().targetAcquired = this;
-          this.hoverCursor='crosshair';
-        }
-      });
-      this.sprite.on('mouseout', () => {
-        this.location.getPlayer().targetAcquired = null;
-        this.hoverCursor='arrow';
-      });
-      this.sprite.on('mouseup', () => {
-        let enemyPos = {'x':this.getX(), 'y':this.getY()};
-        let obj = {};
-        obj.command = 'playerCheckRange';
-        obj.npc = this.id;
-        obj.start = {'x':this.location.getPlayer().getX(), 'y':this.location.getPlayer().getY()};
-        obj.end = enemyPos;
-        this.location.findPath(obj);
-      });
       this.npcDefault.dispatchEvent(new Event(Globals.EVENT_NPC_READY));
     };
     

@@ -3,9 +3,9 @@ import {Globals} from './Globals.jsx'
 export class CombatManager {
   
   
-  constructor(player, area, initiated) {
+  constructor(area, initiated) {
     this.area = area;
-    this.player = player;
+    this.player = area.getPlayer();
     this.canvas = area.canvas;
     
     this.playerTurn = false;
@@ -25,11 +25,13 @@ export class CombatManager {
     this.updateMovementPointsDisplay(this.player.remainingMoves);
     
     for (let i=0; i < this.area.actors.length; i++) {
-      if (this.area.actors[i].team == 1) {
-        this.allies.push(this.area.actors[i]);
-      }
-      if (this.area.actors[i].team == 3) {
-        this.enemies.push(this.area.actors[i]);
+      switch (this.area.actors[i].team) {
+        case 1:
+          this.allies.push(this.area.actors[i]);
+          break;
+        case 3:
+          this.enemies.push(this.area.actors[i]);
+          break;
       }
     }
     console.log(this.allies, this.enemies);
@@ -39,6 +41,7 @@ export class CombatManager {
   }
   
   handlePlayerAttack(enemy) {
+    console.log(this.player, enemy);
     if (!this.player) {
       return;
     }
@@ -53,7 +56,6 @@ export class CombatManager {
     } else {
       this.player.runAttackAnimation('left');
     }
-    console.log('mv', this.player.remainingMoves, this.player.equipped.speed);
     this.player.remainingMoves -= this.player.equipped.speed;
     this.updateMovementPointsDisplay(this.player.remainingMoves);
     /*
@@ -61,11 +63,11 @@ export class CombatManager {
     if (attackResult) {
     }*/
     //89% (attacker's weapon skill) - 5% (defender's Armor Class) = 84%
-    let toHit = this.player.skills.shootin;
+    let toHit = this.player.characterSheet.skills.shootin;
     if (this.player.equipped.melee) {
-      toHit = this.player.skills.scrappin;
+      toHit = this.player.characterSheet.skills.scrappin;
     }
-    let hitChance = toHit - enemy.stats.ac + Math.ceil(this.player.stats.luck/2);
+    let hitChance = toHit - enemy.characterSheet.stats.ac + Math.ceil(this.player.characterSheet.stats.luck/2);
     let roll = Globals.randomInt(1, 100);
     if (roll <= hitChance) {
       let damArr = this.player.equipped.damage.split('d');
@@ -74,24 +76,24 @@ export class CombatManager {
         damage += Globals.randomInt(1, damArr[1]);
       }
       let crit = Globals.randomInt(1, 100);
-      if (crit <= this.player.stats.critical) {
-        this.area.parent.print('You critically hit ' + Globals.ucwords(enemy.name) + ' for ' + damage*Globals.CRITICAL_DAMAGE_MODIFIER + ' points of damage.');
+      if (crit <= this.player.characterSheet.stats.critical) {
+        this.area.print('You critically hit ' + Globals.ucwords(enemy.name) + ' for ' + damage*Globals.CRITICAL_DAMAGE_MODIFIER + ' points of damage.');
       } else {
-        this.area.parent.print('You hit ' + Globals.ucwords(enemy.name) + ' for ' + damage + ' points of damage.');
+        this.area.print('You hit ' + Globals.ucwords(enemy.name) + ' for ' + damage + ' points of damage.');
       }
     } else {
       let critFail = Globals.randomInt(1, 100);
       if (critFail <= Globals.CRITICAL_FAILURE_CHANCE) {
         let saveRoll = Globals.randomInt(1, 100);
-        if (saveRoll >= this.player.stats.luck) {
-          this.area.parent.print('You critically missed and lost the rest of your turn.');
+        if (saveRoll >= this.player.characterSheet.stats.luck) {
+          this.area.print('You critically missed and lost the rest of your turn.');
           this.player.remainingMoves = 0;
           this.updateMovementPointsDisplay(this.player.remainingMoves);
         } else {
-          this.area.parent.print('You missed.');
+          this.area.print('You missed.');
         }
       } else {
-        this.area.parent.print('You missed.');
+        this.area.print('You missed.');
       }
     }
   }
@@ -107,11 +109,11 @@ export class CombatManager {
     }
     npc.remainingMoves -= npc.equipped.speed;
     //89% (attacker's weapon skill) - 5% (defender's Armor Class) = 84%
-    let toHit = npc.skills.shootin;
+    let toHit = npc.characterSheet.skills.shootin;
     if (npc.equipped.melee) {
-      toHit = npc.skills.scrappin;
+      toHit = npc.characterSheet.skills.scrappin;
     }
-    let hitChance = toHit - target.stats.ac + Math.ceil(npc.stats.luck/2);
+    let hitChance = toHit - target.characterSheet.stats.ac + Math.ceil(npc.characterSheet.stats.luck/2);
     let roll = Globals.randomInt(1, 100);
     if (roll <= hitChance) {
       let damArr = npc.equipped.damage.split('d');
@@ -120,23 +122,23 @@ export class CombatManager {
         damage += Globals.randomInt(1, damArr[1]);
       }
       let crit = Globals.randomInt(1, 100);
-      if (crit <= npc.stats.critical) {
-        this.area.parent.print(Globals.ucwords(npc.name) + ' critically hits ' + Globals.ucwords(target.name) + ' for ' + damage*Globals.CRITICAL_DAMAGE_MODIFIER + ' points of damage.');
+      if (crit <= npc.characterSheet.stats.critical) {
+        this.area.print(Globals.ucwords(npc.name) + ' critically hits ' + Globals.ucwords(target.name) + ' for ' + damage*Globals.CRITICAL_DAMAGE_MODIFIER + ' points of damage.');
       } else {
-        this.area.parent.print(Globals.ucwords(npc.name) + ' hits ' + Globals.ucwords(target.name) + ' for ' + damage + ' points of damage.');
+        this.area.print(Globals.ucwords(npc.name) + ' hits ' + Globals.ucwords(target.name) + ' for ' + damage + ' points of damage.');
       }
     } else {
       let critFail = Globals.randomInt(1, 100);
       if (critFail <= Globals.CRITICAL_FAILURE_CHANCE) {
         let saveRoll = Globals.randomInt(1, 100);
-        if (saveRoll >= this.player.stats.luck) {
-          this.area.parent.print(Globals.ucwords(npc.name) + ' critically missed and lost the rest of his turn.');
+        if (saveRoll >= this.player.characterSheet.stats.luck) {
+          this.area.print(Globals.ucwords(npc.name) + ' critically missed and lost the rest of his turn.');
           npc.remainingMoves = 0;
         } else {
-          this.area.parent.print(Globals.ucwords(npc.name) + ' missed.');
+          this.area.print(Globals.ucwords(npc.name) + ' missed.');
         }
       } else {
-        this.area.parent.print(Globals.ucwords(npc.name) + ' missed.');
+        this.area.print(Globals.ucwords(npc.name) + ' missed.');
       }
     }
   }
@@ -159,17 +161,22 @@ export class CombatManager {
     let target = null;
     if (npc.team == 3) {
       for (let i=0; i < this.allies.length; i++) {
+        console.log(npc.getX(), npc.getY(), this.allies[i].getX(), this.allies[i].getY());
         let path = this.area.findPath({'x':npc.getX(), 'y':npc.getY()}, {'x':this.allies[i].getX(), 'y':this.allies[i].getY()});
         if (path) {
           path = path.splice(0, path.length-1);
         }
-        if (!lastDist || path.length < lastDist) {
+        console.log(path);
+        if (!lastDist || path && path.length < lastDist) {
           target = this.allies[i];
           lastDist = path.length;
+          return target;
         }
       }
-      return target;
-    }*/
+      return this.player;
+    }
+    return null;*/
+    return this.player;
   }
   
   handleNPCEndTurn(npc) {
@@ -190,21 +197,28 @@ export class CombatManager {
   }
   
   doNPCTurn(npc) {
-    let self = this;
-    self.npcTurnInterval = setInterval(function() {
-      self.checkRemainingNPCMoves(npc);
+    console.log('running npc turn', npc);
+    this.npcTurnInterval = setInterval(() => {
+      this.checkRemainingNPCMoves(npc);
     }, 100);
     if (!npc.targetAcquired) {
       npc.targetAcquired = this.chooseTarget(npc);
     }
+    console.log('npc target', npc.targetAcquired);
     let enemyPos = {'x':npc.targetAcquired.getX(), 'y':npc.targetAcquired.getY()};
-    let path = self.area.findPath({'x':npc.getX(), 'y':npc.getY()}, enemyPos);
+    let obj = {};
+    obj.command = 'npcCheckRange';
+    obj.npc = npc.id;
+    obj.start = {'x':npc.getX(), 'y':npc.getY()};
+    obj.end = enemyPos;
+    let path = this.area.findPath(obj);
+    console.log('pt', path);
     if (path) {
       path = path.splice(0, path.length-1);
     }
     if (Math.ceil(path.length/4) > npc.equipped.range) {
-      if (path.length/4 > npc.stats.speed) {
-        path = path.splice(0, npc.stats.speed*4);
+      if (path.length/4 > npc.characterSheet.stats.speed) {
+        path = path.splice(0, npc.characterSheet.stats.speed*4);
       }
       for (let i=0; i < path.length; i++) {
         path[i][0] *= Globals.GRID_SQUARE_WIDTH;
@@ -240,13 +254,13 @@ export class CombatManager {
   }
   
   nextTurn(sequence) {
-    this.player.remainingMoves = this.player.stats.speed;
+    this.player.remainingMoves = this.player.characterSheet.stats.speed;
     let self = this;
     if (this.combatSequence >= this.order.length && this.enemies.length) {
       this.combatSequence = 0;
     }
     if (this.order[this.combatSequence]) {
-      this.order[this.combatSequence].remainingMoves = this.order[this.combatSequence].stats.speed;
+      this.order[this.combatSequence].remainingMoves = this.order[this.combatSequence].characterSheet.stats.speed;
       if (this.order[this.combatSequence].type != Globals.OBJECT_TYPE_PLAYER) {
         this.playerTurn = false;
         console.log('npc turn');
@@ -287,9 +301,9 @@ export class CombatManager {
         }
       }
     }
-    npcCombatants.sort((a, b) => (a.stats.speed > b.stats.speed) ? 1 : -1);
+    npcCombatants.sort((a, b) => (a.characterSheet.stats.speed > b.characterSheet.stats.speed) ? 1 : -1);
     for (let i=0; i < npcCombatants.length; i++) {
-      if (npcCombatants[i].stats.speed > this.player.stats.speed) {
+      if (npcCombatants[i].characterSheet.stats.speed > this.player.characterSheet.stats.speed) {
         order.push(npcCombatants[i]);
         if (i == this.enemies.length-1 && !playerAdded) {
           order.push(this.player);

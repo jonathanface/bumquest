@@ -70,13 +70,30 @@ export class Area extends Engine {
             event.data.path = event.data.path.splice(0, event.data.path.length-1);
           }
           if (event.data.path && Math.ceil(event.data.path.length/4) > this.getPlayer().equipped.range) {
-            print("You're out of range.");
+            this.print("You're out of range.");
             return;
           }
           if (!this.combatOn) {
             this.enterCombat('player');
           }
-          this.combat.handlePlayerAttack(self.combat.getNPCByID(event.data.npc));
+          console.log(event.data);
+          this.combat.handlePlayerAttack(this.combat.getNPCByID(event.data.npc));
+          break;
+        case 'npcCheckRange':
+          if (event.data.path) {
+            event.data.path = event.data.path.splice(0, event.data.path.length-1);
+          }
+          let npc = this.combat.getNPCByID(event.data.npc);
+          console.log('npc', npc);
+          if (event.data.path && Math.ceil(event.data.path.length/4) > npc.equipped.range) {
+            this.print(npc.name + " is out of range.");
+            return;
+          }
+          if (!this.combatOn) {
+            this.enterCombat(npc);
+          }
+          console.log(event.data);
+          this.combat.handleNPCAttack(npc, npc.targetAcquired);
           break;
       }
     });
@@ -97,7 +114,6 @@ export class Area extends Engine {
     obj.gridwidth = Globals.GRID_SQUARE_WIDTH;
     obj.gridheight = Globals.GRID_SQUARE_HEIGHT;
     obj.path = this.walkPoints;
-    console.log(obj);
     this.PathWorker.postMessage(obj);
   }
   
@@ -118,7 +134,6 @@ export class Area extends Engine {
       if (player.targetAcquired) {
         return;
       }
-      console.log('pl', player);
       player.cancelAnimations();
       let bounds = this.walkPath.canvas.getBoundingClientRect();
       let start = {};
@@ -145,10 +160,10 @@ export class Area extends Engine {
   }
   
   enterCombat(initiated) {
-    console.log('starting combat', this.player);
-    if (this.player) {
+    console.log('starting combat');
+    if (this.getPlayer()) {
       this.combatOn = true;
-      this.combat = new CombatManager(this.player, this, initiated);
+      this.combat = new CombatManager(this, initiated);
     }
   }
   

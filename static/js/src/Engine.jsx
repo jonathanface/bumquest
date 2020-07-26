@@ -1,11 +1,56 @@
 
-
+import {Globals} from './Globals.jsx';
 export class Engine {
   
   constructor() {
     this.player = null;
     this.currentArea = null;
-    this.canvas = new fabric.Canvas('c');
+    this.canvas = new fabric.Canvas('c', {
+      fireRightClick: true,
+      stopContextMenu: true
+    });
+    this.canvas.on('object:added', (e) => {
+      console.log('Event after:render Triggered');
+      console.log(e);
+      
+      e.target.on('mouseover', () => {
+        if (e.target.metadata) {
+          this.print('You see: ' + Globals.ucwords(e.target.metadata.name) + '.');
+          if (this.currentArea.combatOn || this.player.isTargeting) {
+            console.log('targeting npc');
+            this.player.targetAcquired = e.target.metadata;
+            e.target.hoverCursor='crosshair';
+          }
+        }
+      });
+      e.target.on('mouseout', () => {
+        if (e.target.metadata && this.player.targetAcquired == e.target.metadata) {
+          this.player.targetAcquired = null;
+          e.target.hoverCursor='arrow';
+        }
+      });
+      
+      e.target.on('mouseup', (me) => {
+        switch(me.button) {
+          case 1:
+            if (me.target.metadata && me.target.metadata.type == Globals.OBJECT_TYPE_NPC) {
+              let enemyPos = {'x':me.target.metadata.getX(), 'y':me.target.metadata.getY()};
+              let obj = {};
+              obj.command = 'playerCheckRange';
+              obj.npc = me.target.metadata.id;
+              obj.start = {'x':this.player.getX(), 'y':this.player.getY()};
+              obj.end = enemyPos;
+              this.currentArea.findPath(obj);
+            }
+            break;
+          case 3:
+            if (me.target.metadata) {
+              this.renderRightClickOptions(me);
+            }
+            break;
+        }
+      });
+    });
     
     this.characterSheet = {};
     this.characterSheet.stats = {};
@@ -46,6 +91,78 @@ export class Engine {
     this.characterSheet.skills.rantin = 5 + (this.characterSheet.stats.intelligence + this.characterSheet.stats.attention);
     this.characterSheet.skills.shittin = 5 + (this.characterSheet.stats.fortitude + this.characterSheet.stats.charisma);
     this.characterSheet.skills.sleepin = 5 + (this.characterSheet.stats.fortitude);
+  }
+  
+  renderRightClickOptions(mouseinfo) {
+    console.log('render right click');
+    let element = mouseinfo.target;
+    let menuTimeout = 2000;
+    this.removeAllContextMenus();
+    let div = document.createElement('div');
+    div.oncontextmenu = function(e) { e.preventDefault(); return false; };
+    div.classList.add('contextMenu');
+    console.log('mouse', mouseinfo);
+    div.style.left = (mouseinfo.absolutePointer.x + document.querySelector('.canvas-container').offsetLeft) + 'px';
+    div.style.top = mouseinfo.absolutePointer.y + 'px';
+    let ul = document.createElement('ul');
+    let li = document.createElement('li');
+    li.appendChild(document.createTextNode(Globals.ucwords(element.metadata.name)));
+    ul.appendChild(li);
+    li = document.createElement('li');
+    li.appendChild(document.createTextNode('View'));
+    li.oncontextmenu = function() { return false; };
+    li.onclick = () => {
+      this.print(Globals.upperFirstChar(element.metadata.description));
+      this.removeAllContextMenus();
+    };
+    ul.appendChild(li);
+    if ((element.metadata.container || element.metadata.door) && !element.metadata.open) {
+      li = document.createElement('li');
+      li.appendChild(document.createTextNode('Open'));
+      li.oncontextmenu = function() { return false; };
+      li.onclick = () => {
+        this.player.tryToOpen(element.metadata);
+        this.removeAllContextMenus();
+      };
+      ul.appendChild(li);
+    } else if ((element.metadata.container || element.metadata.door) && element.metadata.open) {
+      li = document.createElement('li');
+      li.appendChild(document.createTextNode('Close'));
+      li.oncontextmenu = function() { return false; };
+      li.onclick = () => {
+        this.player.tryToClose(element.metadata);
+        this.removeAllContextMenus();
+      };
+      ul.appendChild(li);
+    }
+    if (element.metadata.container) {
+      li = document.createElement('li');
+      li.appendChild(document.createTextNode('Search'));
+      li.oncontextmenu = function() { return false; };
+      li.onclick = () => {
+        this.player.tryToSearch(element.metadata);
+        this.removeAllContextMenus();
+      };
+      ul.appendChild(li);
+    }
+    div.appendChild(ul);
+    document.body.appendChild(div);
+    let timer = setTimeout(function() {
+      if (div && div.parentNode) {
+        div.parentNode.removeChild(div);
+      }
+    }, menuTimeout);
+    div.onmouseover = function() {
+      clearTimeout(timer);
+    };
+    div.onmouseout = function() {
+      clearTimeout(timer);
+      timer = setTimeout(function() {
+        if (div && div.parentNode) {
+          div.parentNode.removeChild(div);
+        }
+      }, menuTimeout);
+    }
   }
   
   removeAllContextMenus() {

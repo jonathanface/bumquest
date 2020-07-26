@@ -40,21 +40,14 @@ export class Decor extends Engine {
           selectable:false,
           hoverCursor:'arrow'
         });
+        
       }
       this.x = this.orgX + this.width/2;
       this.y = this.orgY + this.height;
       this.sprite.metadata = {};
       this.sprite.metadata = this;
       this.canvas.add(this.sprite);
-      this.sprite.on('mouseover', () => {
-        this.print('You see: '  + Globals.ucwords(this.name) + '.');
-      });
-      this.sprite.on('mouseout', () => {
-        
-      });
-      this.sprite.on('mouseup', () => {
-        
-      });
+      
       this.canvas.add(this.sprite);
       this.img.dispatchEvent(new Event(Globals.EVENT_DECOR_READY));
     };
