@@ -2,8 +2,7 @@ import {Globals} from './Globals.jsx'
 import {Engine} from './Engine.jsx';
 import PF from 'pathfinding';
 import {CombatManager} from './CombatManager.jsx'
-import worker from './PathfindWorker.jsx';
-import WebWorker from './WebWorker.jsx';
+
 
 export class Area extends Engine {
   
@@ -40,7 +39,7 @@ export class Area extends Engine {
     
     this.grid = null;
     
-    this.setupPathWorker();
+    Globals.SetupPathWorker(this.walkPoints);
   }
   
   getPlayer() {
@@ -52,53 +51,6 @@ export class Area extends Engine {
     return null;
   }
   
-  setupPathWorker() {
-    this.PathWorker = new WebWorker(worker);
-    this.PathWorker.postMessage({command:'generateWalkPath', path:this.walkPoints});
-    this.PathWorker.addEventListener('message', event => {
-      console.log('got ', event.data.command, 'back from worker');
-      switch(event.data.command) {
-        case 'clickedGround':
-        case 'walkToObject':
-          this.getPlayer().clickedGroundPathResults(event.data.path);
-          break;
-        case 'combatMouseMove':
-          this.combat.combatMouseMoveResults(event.data);
-          break;
-        case 'playerCheckRange':
-          if (event.data.path) {
-            event.data.path = event.data.path.splice(0, event.data.path.length-1);
-          }
-          if (event.data.path && Math.ceil(event.data.path.length/4) > this.getPlayer().equipped.range) {
-            this.print("You're out of range.");
-            return;
-          }
-          if (!this.combatOn) {
-            this.enterCombat('player');
-          }
-          console.log(event.data);
-          this.combat.handlePlayerAttack(this.combat.getNPCByID(event.data.npc));
-          break;
-        case 'npcCheckRange':
-          if (event.data.path) {
-            event.data.path = event.data.path.splice(0, event.data.path.length-1);
-          }
-          let npc = this.combat.getNPCByID(event.data.npc);
-          console.log('npc', npc);
-          if (event.data.path && Math.ceil(event.data.path.length/4) > npc.equipped.range) {
-            this.print(npc.name + " is out of range.");
-            return;
-          }
-          if (!this.combatOn) {
-            this.enterCombat(npc);
-          }
-          console.log(event.data);
-          this.combat.handleNPCAttack(npc, npc.targetAcquired);
-          break;
-      }
-    });
-  }
-  
   renderBackground() {
     console.log(this.canvas);
     this.canvas.setBackgroundImage('img/areas/area01.png', () => {
@@ -106,15 +58,6 @@ export class Area extends Engine {
       this.drawWalkpath();
       this.canvas.renderAll();
     });
-  }
-  
-  findPath(obj) {
-    obj.width = this.width;
-    obj.height = this.height;
-    obj.gridwidth = Globals.GRID_SQUARE_WIDTH;
-    obj.gridheight = Globals.GRID_SQUARE_HEIGHT;
-    obj.path = this.walkPoints;
-    this.PathWorker.postMessage(obj);
   }
   
   drawWalkpath() {
@@ -129,7 +72,7 @@ export class Area extends Engine {
     this.walkPath.globalAlpha = 0;
     this.walkPath.fill();
     this.walkPath.save();
-    this.walkPath.canvas.onclick = (event => {
+    this.walkPath.canvas.onclick = async (event) => {
       let player = this.getPlayer();
       if (player.targetAcquired) {
         return;
@@ -147,9 +90,17 @@ export class Area extends Engine {
         obj.command = 'clickedGround';
         obj.start = start;
         obj.end = end;
-        this.findPath(obj);
+        obj.width = this.width;
+        obj.height = this.height;
+        obj.path = this.walkPoints;
+        try {
+          let route = await Globals.SendToWorker(obj);
+          this.getPlayer().clickedGroundPathResults(route.path);
+        } catch(e) {
+          console.log(e);
+        }
       }
-    });
+    };
     this.loaderImg.dispatchEvent(new Event(Globals.EVENT_AREA_READY));
   }
   

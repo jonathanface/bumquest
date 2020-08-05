@@ -30,7 +30,7 @@ export class Engine {
         }
       });
       
-      e.target.on('mouseup', (me) => {
+      e.target.on('mouseup', async (me) =>  {
         switch(me.button) {
           case 1:
             if (me.target.metadata && me.target.metadata.type == Globals.OBJECT_TYPE_NPC) {
@@ -40,7 +40,29 @@ export class Engine {
               obj.npc = me.target.metadata.id;
               obj.start = {'x':this.player.getX(), 'y':this.player.getY()};
               obj.end = enemyPos;
-              this.currentArea.findPath(obj);
+              obj.width = this.currentArea.width;
+              obj.height = this.currentArea.height;
+              obj.path = this.currentArea.walkPoints;
+              try {
+                let results = await Globals.SendToWorker(obj);
+                if (results.path) {
+                  results.path = results.path.splice(0, results.path.length-1);
+                }
+                if (results.path && Math.ceil(results.path.length/4) > this.currentArea.getPlayer().equipped.range) {
+                  this.print("You're out of range.");
+                  return;
+                }
+                if (!this.currentArea.combatOn) {
+                  this.currentArea.enterCombat('player');
+                }
+                this.currentArea.combat.handlePlayerAttack(this.currentArea.combat.getNPCByID(results.npc));
+              } catch(e) {
+                if (e.data && e.data.err) {
+                  console.log(e.data.err);
+                } else {
+                  console.log(e);
+                }
+              }
             }
             break;
           case 3:
@@ -178,35 +200,35 @@ export class Engine {
       let div = document.createElement('div');
       div.classList.add('sheet_holder');
       document.body.appendChild(div);
-      await this.getTemplate('sheet.html', div);
-      
+      div.innerHTML = await this.getTemplate('sheet.html');
+
       let closex = div.querySelector('header a');
       closex.onclick = this.showCharacterSheet;
       
       let stats = div.querySelectorAll('.base_stats .box');
-      stats[0].innerHTML = this.state.player.stats.fortitude;
-      stats[1].innerHTML = this.state.player.stats.attention;
-      stats[2].innerHTML = this.state.player.stats.charisma;
-      stats[3].innerHTML = this.state.player.stats.intelligence;
-      stats[4].innerHTML = this.state.player.stats.agility;
-      stats[5].innerHTML = this.state.player.stats.luck;
-      stats[6].innerHTML = this.state.player.stats.strength;
+      stats[0].innerHTML = this.player.characterSheet.stats.fortitude;
+      stats[1].innerHTML = this.player.characterSheet.stats.attention;
+      stats[2].innerHTML = this.player.characterSheet.stats.charisma;
+      stats[3].innerHTML = this.player.characterSheet.stats.intelligence;
+      stats[4].innerHTML = this.player.characterSheet.stats.agility;
+      stats[5].innerHTML = this.player.characterSheet.stats.luck;
+      stats[6].innerHTML = this.player.characterSheet.stats.strength;
       
       let skills = div.querySelectorAll('.skills .value');
-      skills[0].innerHTML = this.state.player.skills.beggin + '%';
-      skills[1].innerHTML = this.state.player.skills.shootin + '%';
-      skills[2].innerHTML = this.state.player.skills.scrappin + '%';
-      skills[3].innerHTML = this.state.player.skills.wrappin + '%';
-      skills[4].innerHTML = this.state.player.skills.fixin + '%';
-      skills[5].innerHTML = this.state.player.skills.learnin + '%';
-      skills[6].innerHTML = this.state.player.skills.rantin + '%';
-      skills[7].innerHTML = this.state.player.skills.shittin + '%';
-      skills[8].innerHTML = this.state.player.skills.sleepin + '%';
+      skills[0].innerHTML = this.player.characterSheet.skills.beggin + '%';
+      skills[1].innerHTML = this.player.characterSheet.skills.shootin + '%';
+      skills[2].innerHTML = this.player.characterSheet.skills.scrappin + '%';
+      skills[3].innerHTML = this.player.characterSheet.skills.wrappin + '%';
+      skills[4].innerHTML = this.player.characterSheet.skills.fixin + '%';
+      skills[5].innerHTML = this.player.characterSheet.skills.learnin + '%';
+      skills[6].innerHTML = this.player.characterSheet.skills.rantin + '%';
+      skills[7].innerHTML = this.player.characterSheet.skills.shittin + '%';
+      skills[8].innerHTML = this.player.characterSheet.skills.sleepin + '%';
       
       let derived = div.querySelectorAll('.stats_info .value');
-      derived[0].innerHTML = this.state.player.stats.tolerance + '%';
-      derived[1].innerHTML = this.state.player.stats.speed;
-      let smellData = this.state.player.getSmellLabel(this.state.player.stats.smell);
+      derived[0].innerHTML = this.player.characterSheet.stats.tolerance + '%';
+      derived[1].innerHTML = this.player.characterSheet.stats.speed;
+      let smellData = this.player.getSmellLabel(this.player.characterSheet.stats.smell);
       derived[2].style.color = smellData[1];
       derived[2].innerHTML = smellData[0];
     } else {
@@ -250,15 +272,14 @@ export class Engine {
     }).catch(error => console.log(error));
   }
   
-  getTemplate(url, div) {
+  getTemplate(url) {
     return new Promise(function(resolve, reject) {
       fetch(Globals.TEMPLATE_DIR + url, {
         method:'GET',
         Headers: {
           'Content-Type': 'text/html'
         }
-      }).then(response => {div.innerHTML = response; resolve();})
-      .catch(error => console.log(error));
+      }).then(response => response.text()).then(data => resolve(data)).catch((e) => {reject(e)});
     });
   }
   

@@ -22,7 +22,7 @@ export class CombatManager {
     this.enemies = [];
     this.allies = [];
     
-    this.updateMovementPointsDisplay(this.player.remainingMoves);
+    this.updateRemainingMoves(this.player.remainingMoves);
     
     for (let i=0; i < this.area.actors.length; i++) {
       switch (this.area.actors[i].team) {
@@ -56,8 +56,7 @@ export class CombatManager {
     } else {
       this.player.runAttackAnimation('left');
     }
-    this.player.remainingMoves -= this.player.equipped.speed;
-    this.updateMovementPointsDisplay(this.player.remainingMoves);
+    this.updateRemainingMoves(this.player.remainingMoves - this.player.equipped.speed);
     /*
     let attackResult = await this.queryBackend('GET', Globals.API_DIR + 'attack/' + this.state.player.id + '/' + enemy.id);
     if (attackResult) {
@@ -87,8 +86,7 @@ export class CombatManager {
         let saveRoll = Globals.randomInt(1, 100);
         if (saveRoll >= this.player.characterSheet.stats.luck) {
           this.area.print('You critically missed and lost the rest of your turn.');
-          this.player.remainingMoves = 0;
-          this.updateMovementPointsDisplay(this.player.remainingMoves);
+          this.setPlayerRemainingMoves(0);
         } else {
           this.area.print('You missed.');
         }
@@ -155,28 +153,42 @@ export class CombatManager {
     }
   }
   
-  chooseTarget(npc) {
-    /*
-    let lastDist = null;
-    let target = null;
-    if (npc.team == 3) {
-      for (let i=0; i < this.allies.length; i++) {
-        console.log(npc.getX(), npc.getY(), this.allies[i].getX(), this.allies[i].getY());
-        let path = this.area.findPath({'x':npc.getX(), 'y':npc.getY()}, {'x':this.allies[i].getX(), 'y':this.allies[i].getY()});
-        if (path) {
-          path = path.splice(0, path.length-1);
-        }
-        console.log(path);
-        if (!lastDist || path && path.length < lastDist) {
-          target = this.allies[i];
-          lastDist = path.length;
-          return target;
+  async chooseTarget(npc) {
+    return new Promise(async (resolve, reject) => {
+      let lastDist = null;
+      let target = null;
+      if (npc.team == 3) {
+        for (let i=0; i < this.allies.length; i++) {
+          try {
+            let results = await Globals.SendToWorker({
+              'end' : {
+                'x':npc.getX(),
+                'y':npc.getY()
+              },
+              'start':{
+                'x':this.allies[i].getX(),
+                'y':this.allies[i].getY()
+              },
+              'width':this.area.width,
+              'height':this.area.height,
+              'path': this.area.walkPoints
+            });
+            if (results.path) {
+              results.path = results.path.splice(0, results.path.length-1);
+            }
+            if (!lastDist || results.path && results.path.length < lastDist) {
+              target = this.allies[i];
+              lastDist = results.path.length;
+              resolve(target);
+            }
+          } catch (e) {
+            console.log(e);
+            reject(e);
+          }
         }
       }
-      return this.player;
-    }
-    return null;*/
-    return this.player;
+      reject();
+    });
   }
   
   handleNPCEndTurn(npc) {
@@ -196,42 +208,50 @@ export class CombatManager {
     }
   }
   
-  doNPCTurn(npc) {
+  async doNPCTurn(npc) {
     console.log('running npc turn', npc);
     this.npcTurnInterval = setInterval(() => {
       this.checkRemainingNPCMoves(npc);
     }, 100);
     if (!npc.targetAcquired) {
-      npc.targetAcquired = this.chooseTarget(npc);
+      npc.targetAcquired = await this.chooseTarget(npc);
     }
     console.log('npc target', npc.targetAcquired);
+    
     let enemyPos = {'x':npc.targetAcquired.getX(), 'y':npc.targetAcquired.getY()};
     let obj = {};
     obj.command = 'npcCheckRange';
     obj.npc = npc.id;
     obj.start = {'x':npc.getX(), 'y':npc.getY()};
     obj.end = enemyPos;
-    let path = this.area.findPath(obj);
-    console.log('pt', path);
-    if (path) {
-      path = path.splice(0, path.length-1);
-    }
-    if (Math.ceil(path.length/4) > npc.equipped.range) {
-      if (path.length/4 > npc.characterSheet.stats.speed) {
-        path = path.splice(0, npc.characterSheet.stats.speed*4);
+    obj.width = this.area.width;
+    obj.height = this.area.height;
+    obj.path = this.area.WalkPoints;
+    try {
+      let results = await Globals.SendToWorker(obj);
+      console.log('pt', results.path);
+      if (results.path) {
+        results.path = results.path.splice(0, results.path.length-1);
       }
-      for (let i=0; i < path.length; i++) {
-        path[i][0] *= Globals.GRID_SQUARE_WIDTH;
-        path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
-      }
-      
-      if (npc.remainingMoves - Math.ceil(path.length/4) >= npc.equipped.speed) {
-        npc.walkRoute(path, this.runNPCAttacks.bind(self, npc));
+      if (results.path && Math.ceil(results.path.length/4) > npc.equipped.range) {
+        if (results.path.length/4 > npc.characterSheet.stats.speed) {
+          results.path = results.path.splice(0, npc.characterSheet.stats.speed*4);
+        }
+        for (let i=0; i < results.path.length; i++) {
+          results.path[i][0] *= Globals.GRID_SQUARE_WIDTH;
+          results.path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
+        }
+        
+        if (npc.remainingMoves - Math.ceil(results.path.length/4) >= npc.equipped.speed) {
+          npc.walkRoute(results.path, this.runNPCAttacks.bind(this, npc));
+        } else {
+          npc.walkRoute(results.path, this.handleNPCEndTurn.bind(this, npc));
+        }
       } else {
-        npc.walkRoute(path, this.handleNPCEndTurn.bind(self, npc));
+        this.runNPCAttacks(npc);
       }
-    } else {
-      this.runNPCAttacks(npc);
+    } catch(e) {
+      console.log(e);
     }
   }
   
@@ -254,23 +274,23 @@ export class CombatManager {
   }
   
   nextTurn(sequence) {
-    this.player.remainingMoves = this.player.characterSheet.stats.speed;
-    let self = this;
+    
+
     if (this.combatSequence >= this.order.length && this.enemies.length) {
       this.combatSequence = 0;
     }
     if (this.order[this.combatSequence]) {
-      this.order[this.combatSequence].remainingMoves = this.order[this.combatSequence].characterSheet.stats.speed;
       if (this.order[this.combatSequence].type != Globals.OBJECT_TYPE_PLAYER) {
         this.playerTurn = false;
         console.log('npc turn');
+        this.order[this.combatSequence].remainingMoves = this.order[this.combatSequence].characterSheet.stats.speed;
         this.doNPCTurn(this.order[this.combatSequence]);
       } else {
         console.log('player turn');
-        this.updateMovementPointsDisplay(this.player.remainingMoves);
+        this.updateRemainingMoves(this.player.characterSheet.stats.speed);
         this.playerTurn = true;
-        self.playerTurnInterval = setInterval(function() {
-          self.checkRemainingPlayerMoves();
+        this.playerTurnInterval = setInterval(() => {
+          this.checkRemainingPlayerMoves();
         }, 100);
       }
     }
@@ -324,114 +344,120 @@ export class CombatManager {
     console.log('end player turn');
   }
   
-  updateMovementPointsDisplay(value) {
+  updateRemainingMoves(value) {
+    this.player.remainingMoves = value;
     document.querySelector('#movement_points').innerHTML = value;
   }
 
   combatMouseMoveResults(obj) {
-    console.log('wtf', obj.path);
-    let self = this;
     if (obj.path && obj.path.length) {
-      if (!self.moveLine && !self.player.isMoving) {
+      if (!this.moveLine && !this.player.isMoving) {
         let coords = [obj.start.x, obj.start.y, obj.start.x, obj.start.y];
-        self.moveLine = new fabric.Line(coords, {
+        this.moveLine = new fabric.Line(coords, {
           stroke: 'black',
           strokeWidth: 3,
           selectable:false
         });
-        self.canvas.add(self.moveLine);
+        this.canvas.add(this.moveLine);
       }
-      if (!self.moveText && !self.player.isMoving) {
-        self.moveText = new fabric.Text('X', { left: 100, top: 100, fontFamily:'verdana,geneva,sans-serif', fontSize:18, fontWeight:'bold', fill:'green'});
-        self.canvas.add(self.moveText);
+      if (!this.moveText && !this.player.isMoving) {
+        this.moveText = new fabric.Text('X', { left: 100, top: 100, fontFamily:'verdana,geneva,sans-serif', fontSize:18, fontWeight:'bold', fill:'green'});
+        this.canvas.add(this.moveText);
       }
       
-      if (self.moveLine) {
-        self.moveLine.set({'x2':obj.end.x, 'y2':obj.end.y});
+      if (this.moveLine) {
+        this.moveLine.set({'x2':obj.end.x, 'y2':obj.end.y});
       }
       let textPos = Object.assign({}, obj.end);
       //textPos.x += 10;
       //textPos.y -= 7;
-      console.log('move text', Math.ceil(obj.path.length/4).toString(), 'remmoves', self.player.remainingMoves);
-      self.moveText.set({text:Math.ceil(obj.path.length/4).toString(), left:textPos.x, top:textPos.y});
-      if (obj.path.length/4 <= self.player.remainingMoves) {
-        self.moveLine.set({stroke:'green'});
-        self.moveText.set({fill:'green'});
+      console.log('move text', Math.ceil(obj.path.length/4).toString(), 'remmoves', this.player.remainingMoves);
+      this.moveText.set({text:Math.ceil(obj.path.length/4).toString(), left:textPos.x, top:textPos.y});
+      if (obj.path.length/4 <= this.player.remainingMoves) {
+        this.moveLine.set({stroke:'green'});
+        this.moveText.set({fill:'green'});
       } else {
-        self.moveLine.set({stroke:'red'});
-        self.moveText.set({fill:'red'});
+        this.moveLine.set({stroke:'red'});
+        this.moveText.set({fill:'red'});
       }
     } else {
-      self.moveLine.set({stroke:'black'});
-      self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'black'});
+      this.moveLine.set({stroke:'black'});
+      this.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'black'});
     }
   }
 
   addMouseActions() {
-    let self = this;
-    
-    this.canvas.on('mouse:out', function(event) {
-      this.remove(self.moveLine);
-      this.remove(self.moveText);
-      self.moveLine = null;
-      self.moveText = null;
-      self.area.PathWorker.postMessage({command:'cancelThread'});
+
+    this.canvas.on('mouse:out', (event) => {
+      this.canvas.remove(this.moveLine);
+      this.canvas.remove(this.moveText);
+      this.moveLine = null;
+      this.moveText = null;
+      Globals.PathWorker.postMessage({command:'cancelThread'});
     });
 
-    this.canvas.on('mouse:move', function(event) {
-      let player = self.player;
-      if (self.playerTurn) {
+    this.canvas.on('mouse:move', async (event) => {
+      if (this.playerTurn) {
         //self.area.PathWorker.postMessage({command:'cancelThread'});
-        if (player.targetAcquired) {
-          if (self.moveLine) {
-            this.remove(self.moveLine);
-            self.moveLine = null;
+        if (this.player.targetAcquired) {
+          if (this.moveLine) {
+            this.canvas.remove(this.moveLine);
+            this.moveLine = null;
           }
-          if (self.moveText) {
-            this.remove(self.moveText);
-            self.moveText = null;
+          if (this.moveText) {
+            this.canvas.remove(this.moveText);
+            this.moveText = null;
           }
           return;
         }
         let start = {};
-        start.x = player.getX();
-        start.y = player.getY();
+        start.x = this.player.getX();
+        start.y = this.player.getY();
         
         let end = {};
         end.x = Math.round(event.pointer.x);
         end.y = Math.round(event.pointer.y);
-        if (!self.moveLine && !player.isMoving) {
+        if (!this.moveLine && !this.player.isMoving) {
           let coords = [start.x, start.y, start.x, start.y];
-          self.moveLine = new fabric.Line(coords, {
+          this.moveLine = new fabric.Line(coords, {
             stroke: 'black',
             strokeWidth: 3,
             selectable:false
           });
-          self.canvas.add(self.moveLine);
+          this.canvas.add(this.moveLine);
         }
-        if (!self.moveText && !player.isMoving) {
-          self.moveText = new fabric.Text('X', { left: 100, top: 100, fontFamily:'verdana,geneva,sans-serif', fontSize:18, fontWeight:'bold', fill:'green'});
-          self.canvas.add(self.moveText);
+        if (!this.moveText && !this.player.isMoving) {
+          this.moveText = new fabric.Text('X', { left: 100, top: 100, fontFamily:'verdana,geneva,sans-serif', fontSize:18, fontWeight:'bold', fill:'green'});
+          this.canvas.add(this.moveText);
         }
         
-        if (self.moveLine) {
-          self.moveLine.set({'x2':end.x, 'y2':end.y});
+        if (this.moveLine) {
+          this.moveLine.set({'x2':end.x, 'y2':end.y});
         }
         let textPos = Object.assign({}, end);
         textPos.x += 10;
         textPos.y -= 7;
-        if (self.moveText && self.moveLine) {
-          if (self.area.walkPath.isPointInPath(end.x, end.y)) {
+        if (this.moveText && this.moveLine) {
+          if (this.area.walkPath.isPointInPath(end.x, end.y)) {
             let obj = {};
             obj.command = 'combatMouseMove';
             obj.start = start;
             obj.end = end;
-            self.area.findPath(obj);
+            obj.width = this.area.width;
+            obj.height = this.area.height;
+            obj.path = this.area.WalkPoints;
+            try {
+              let results = await Globals.SendToWorker(obj);
+              console.log(results);
+              this.combatMouseMoveResults(results);
+            } catch (e) {
+              console.log(e);
+            }
           } else {
-            self.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'red'});
+            this.moveText.set({text:'X', left:textPos.x, top:textPos.y, fill:'red'});
           }
         }
-        this.renderAll();
+        this.canvas.renderAll();
       }
     });
   }

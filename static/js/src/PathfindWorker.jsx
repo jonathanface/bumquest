@@ -7,9 +7,7 @@ export default () => {
   self.walkPath = canvas.getContext('2d');
   
   self.cancel = false;
-  
-  
-  
+
   self.addEventListener('message', event => { // eslint-disable-line no-restricted-globals
     if (!event) return;
     
@@ -18,6 +16,7 @@ export default () => {
         console.log('make walkpath');
         self.walkPath.beginPath();
         self.walkPath.moveTo(event.data.path[0].x, event.data.path[0].y);
+        
         for (let i=1; i < event.data.path.length; i++) {
           self.walkPath.lineTo(event.data.path[i].x, event.data.path[i].y);
         }
@@ -30,27 +29,42 @@ export default () => {
         break;
       default:
         if (!self.cancel) {
-          let scaleW = Math.ceil(event.data.width/event.data.gridwidth*4);
-          let scaleH = Math.ceil(event.data.height/event.data.gridheight);
-          let grid = new PF.Grid(scaleW, scaleH);
-          for (let i=0; i < scaleW; i++) {
-            for (let s=0; s < scaleH; s++) {
-              if (self.walkPath.isPointInPath(i*event.data.gridwidth, s*event.data.gridheight)) {
-                //console.log('true', i, s);
-                grid.setWalkableAt(i, s, true);
-              } else {
-                //console.log('false', i, s);
-                grid.setWalkableAt(i, s, false);
+          let obj = {};
+          try {
+            let scaleW = Math.ceil(event.data.width/event.data.gridwidth*4);
+            let scaleH = Math.ceil(event.data.height/event.data.gridheight);
+            let grid = new PF.Grid(scaleW, scaleH);
+            for (let i=0; i < scaleW; i++) {
+              for (let s=0; s < scaleH; s++) {
+                if (self.walkPath.isPointInPath(i*event.data.gridwidth, s*event.data.gridheight)) {
+                  //console.log('true', i, s);
+                  grid.setWalkableAt(i, s, true);
+                } else {
+                  //console.log('false', i, s);
+                  grid.setWalkableAt(i, s, false);
+                }
               }
             }
+            let pathfinder = new PF.DijkstraFinder({
+              allowDiagonal: true,
+              dontCrossCorners:false
+            });
+            obj.path = pathfinder.findPath(Math.round(event.data.start.x/event.data.gridwidth), Math.round(event.data.start.y/event.data.gridheight),
+                                           Math.round(event.data.end.x/event.data.gridwidth), Math.round(event.data.end.y/event.data.gridheight), grid);
+          } catch (error) {
+            console.log('cuaght', error);
+            obj.err = error;
           }
-          let pathfinder = new PF.DijkstraFinder({
-            allowDiagonal: true,
-            dontCrossCorners:false
-          });
-          let obj = event.data;
-          obj.path = pathfinder.findPath(Math.round(obj.start.x/obj.gridwidth), Math.round(obj.start.y/obj.gridheight),
-                                         Math.round(obj.end.x/obj.gridwidth), Math.round(obj.end.y/obj.gridheight), grid);
+          obj.start = {};
+          obj.end = {};
+          obj.start.x = event.data.start.x;
+          obj.start.y = event.data.start.y;
+          obj.end.x = event.data.end.x;
+          obj.end.y = event.data.end.y;
+          if (event.data.npc) {
+            obj.npc = event.data.npc;
+          }
+          obj.id = event.data.id;
           postMessage(obj);
         } else {
           self.cancel = false;

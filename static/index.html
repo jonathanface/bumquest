@@ -16,16 +16,16 @@
       <div class="controls">
         <div class="console"></div>
         <div class="vertical_bar">
-          <a onclick="callCharacterSheet()">INFO</a>
-          <a onclick="triggerEndTurn();">END TURN</a>
+          <a id="characterSheetBtn">INFO</a>
+          <a id="endTurnBtn">END TURN</a>
           <a>POCKETS</a>
         </div>
         <div class="center_stats">
           <label for="movement_points">Movement Points:</label>
           <span id="movement_points"></span>
           <div class="weaponBox">
-            <a>
-              <img class="equipped" /> <!--onClick={this.enterTargetingMode.bind(this)}--> 
+            <a id="targetModeBtn">
+              <img class="equipped" /> 
             </a>
           </div>
         </div>

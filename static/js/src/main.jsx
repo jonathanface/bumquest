@@ -8,15 +8,16 @@ import {NPC} from './NPC.jsx'
 
 let engine = new Engine();
 
-function callCharacterSheet() {
-  engine.showCharacterSheet();
-}
-function triggerEndTurn() {
-  engine.endCombatTurn();
-}
-
 window.onload = function() {
-  //new Globals();
+  document.querySelector('#endTurnBtn').onclick = function(event) {
+    engine.endCombatTurn();
+  };
+  document.querySelector('#characterSheetBtn').onclick = function(event) {
+    engine.showCharacterSheet();
+  };
+  document.querySelector('#targetModeBtn').onclick = function(event) {
+    engine.enterTargetingMode();
+  };
   
   let startAreaID = '29c94708-c44c-11e9-bc97-0e49f1f8e77c';
   let tempPlayerID = '43554018-c44b-11e9-bc97-0e49f1f8e77c';
