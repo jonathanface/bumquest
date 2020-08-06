@@ -27,7 +27,7 @@ export class Decor extends Engine {
   }
   
   render() {
- 
+    
     this.img.onload = () => {
       this.maxWidth = this.img.width;
       this.maxHeight = this.img.height;

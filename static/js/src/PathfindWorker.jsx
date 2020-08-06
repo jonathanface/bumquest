@@ -51,6 +51,10 @@ export default () => {
             });
             obj.path = pathfinder.findPath(Math.round(event.data.start.x/event.data.gridwidth), Math.round(event.data.start.y/event.data.gridheight),
                                            Math.round(event.data.end.x/event.data.gridwidth), Math.round(event.data.end.y/event.data.gridheight), grid);
+            for (let i=0; i < obj.path.length; i++) {
+              obj.path[i][0] *= event.data.gridwidth;
+              obj.path[i][1] *= event.data.gridheight;
+            }
           } catch (error) {
             console.log('cuaght', error);
             obj.err = error;

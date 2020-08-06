@@ -45,52 +45,14 @@ export class Globals {
         if (reject) {
           reject(event);
         }
-        delete this.rejects[event.data.id];
       }
       const resolve = this.resolves[event.data.id];
       if (resolve) {
         resolve(event.data);
-        delete this.resolves[event.data.id];
+        
       }
-      
-      
-          /*
-        case 'combatMouseMove':
-          this.combat.combatMouseMoveResults(event.data);
-          break;
-        case 'playerCheckRange':
-          if (event.data.path) {
-            event.data.path = event.data.path.splice(0, event.data.path.length-1);
-          }
-          if (event.data.path && Math.ceil(event.data.path.length/4) > this.getPlayer().equipped.range) {
-            this.print("You're out of range.");
-            return;
-          }
-          if (!this.combatOn) {
-            this.enterCombat('player');
-          }
-          console.log(event.data);
-          this.combat.handlePlayerAttack(this.combat.getNPCByID(event.data.npc));
-          break;
-        case 'npcCheckRange':
-          if (event.data.path) {
-            event.data.path = event.data.path.splice(0, event.data.path.length-1);
-          }
-          let npc = this.combat.getNPCByID(event.data.npc);
-          if (!this.combatOn) {
-            this.enterCombat(npc);
-          }
-          
-          if (event.data.path && Math.ceil(event.data.path.length/4) > npc.equipped.range) {
-            this.print(Globals.ucwords(npc.name) + " is out of range.");
-            this.combat.handleNPCMove();
-            return;
-          }
-
-          console.log(event.data);
-          this.combat.handleNPCAttack(npc, npc.targetAcquired);
-          break;
-      }*/
+      delete this.resolves[event.data.id];
+      delete this.rejects[event.data.id];
     });
   }
   

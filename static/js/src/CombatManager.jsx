@@ -57,11 +57,6 @@ export class CombatManager {
       this.player.runAttackAnimation('left');
     }
     this.updateRemainingMoves(this.player.remainingMoves - this.player.equipped.speed);
-    /*
-    let attackResult = await this.queryBackend('GET', Globals.API_DIR + 'attack/' + this.state.player.id + '/' + enemy.id);
-    if (attackResult) {
-    }*/
-    //89% (attacker's weapon skill) - 5% (defender's Armor Class) = 84%
     let toHit = this.player.characterSheet.skills.shootin;
     if (this.player.equipped.melee) {
       toHit = this.player.characterSheet.skills.scrappin;
@@ -86,7 +81,7 @@ export class CombatManager {
         let saveRoll = Globals.randomInt(1, 100);
         if (saveRoll >= this.player.characterSheet.stats.luck) {
           this.area.print('You critically missed and lost the rest of your turn.');
-          this.setPlayerRemainingMoves(0);
+          this.updateRemainingMoves(0);
         } else {
           this.area.print('You missed.');
         }
@@ -216,7 +211,6 @@ export class CombatManager {
     if (!npc.targetAcquired) {
       npc.targetAcquired = await this.chooseTarget(npc);
     }
-    console.log('npc target', npc.targetAcquired);
     
     let enemyPos = {'x':npc.targetAcquired.getX(), 'y':npc.targetAcquired.getY()};
     let obj = {};
@@ -226,7 +220,7 @@ export class CombatManager {
     obj.end = enemyPos;
     obj.width = this.area.width;
     obj.height = this.area.height;
-    obj.path = this.area.WalkPoints;
+    obj.path = this.area.walkPoints;
     try {
       let results = await Globals.SendToWorker(obj);
       console.log('pt', results.path);
@@ -237,11 +231,6 @@ export class CombatManager {
         if (results.path.length/4 > npc.characterSheet.stats.speed) {
           results.path = results.path.splice(0, npc.characterSheet.stats.speed*4);
         }
-        for (let i=0; i < results.path.length; i++) {
-          results.path[i][0] *= Globals.GRID_SQUARE_WIDTH;
-          results.path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
-        }
-        
         if (npc.remainingMoves - Math.ceil(results.path.length/4) >= npc.equipped.speed) {
           npc.walkRoute(results.path, this.runNPCAttacks.bind(this, npc));
         } else {

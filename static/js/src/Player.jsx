@@ -362,7 +362,7 @@ export class Player extends Engine {
   }
   
   async searchContainer(data) {
-    let containerInfo = await this.parent.queryBackend('GET', Globals.API_DIR + 'container/' + data.id + '/contents').catch((err) => {
+    let containerInfo = await this.queryBackend('GET', Globals.API_DIR + 'container/' + data.id + '/contents').catch((err) => {
       this.print(err.message);
     });
     if (containerInfo) {
@@ -422,10 +422,6 @@ export class Player extends Engine {
           return;
         }
       }
-      for (let i=0; i < path.length; i++) {
-        path[i][0] *= Globals.GRID_SQUARE_WIDTH;
-        path[i][1] *= Globals.GRID_SQUARE_HEIGHT;
-      }
       console.log('got path', path);
       this.walkRoute(path);
     } else {
@@ -433,22 +429,31 @@ export class Player extends Engine {
     }
   }
   
-  walkToObject(target) {
+  async walkToObject(target) {
     if (!this.location.combatOn) {
+      console.log('tr', target);
       let start = {};
       start.x = this.getX();
       start.y = this.getY();
       let end = {};
       end.x = target.getX();
       end.y = target.getY();
-      console.log('end', end.x, end.y);
       if (this.location.walkPath.isPointInPath(end.x, end.y)) {
         let obj = {};
         obj.command = 'walkToObject';
         obj.start = start;
         obj.end = end;
-        this.location.findPath(obj);
-        
+        obj.path = this.location.walkPoints;
+        obj.width = this.location.width;
+        obj.height = this.location.height;
+        console.log(obj);
+        try {
+          let results = await Globals.SendToWorker(obj);
+          
+          this.walkRoute(results.path);
+        } catch(e) {
+          console.log(e);
+        }
       }
     }
   }
@@ -492,6 +497,7 @@ export class Player extends Engine {
   }
   
   walkRoute(path) {
+    console.log('path', path);
     this.isMoving = true;
     this.animationCount = 0;
     this.currentPath = path;
